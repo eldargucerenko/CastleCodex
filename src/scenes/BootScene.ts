@@ -8,7 +8,7 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     for (let frame = 1; frame <= 6; frame += 1) {
-      this.load.image(`knight-run-${frame}`, `/assets/Knight1/KnightRun${frame}.png`);
+      this.load.image(`knight-run-${frame}`, `assets/Knight1/KnightRun${frame}.png`);
     }
   }
 
