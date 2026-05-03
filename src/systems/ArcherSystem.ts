@@ -6,26 +6,26 @@ import { WizardEnemy } from '../entities/WizardEnemy';
 
 export class ArcherSystem {
   private nextShotAt = 0;
+  private readonly fireRate = 1032;
+  private readonly damage = 3;
+  private readonly range = 500;
 
   constructor(private scene: Phaser.Scene, private castle: Castle, private getEnemies: () => Enemy[]) {}
 
   update(time: number): void {
     const livingArchers = this.castle.getLivingArcherCount();
     if (livingArchers <= 0 || time < this.nextShotAt) return;
-    const fireRate = Math.max(430, (1050 - livingArchers * 190) * 1.2);
-    const damage = 2 + livingArchers;
-    const range = 420 + livingArchers * 80;
     const shooter = this.castle.getLivingArcherTarget();
-    const targets = this.getEnemies().filter((enemy) => this.canShootTarget(enemy, range));
+    const targets = this.getEnemies().filter((enemy) => this.canShootTarget(enemy, this.range));
     const target = Phaser.Utils.Array.GetRandom(targets);
     if (!target || !shooter) return;
-    this.nextShotAt = time + fireRate;
-    Projectile.homing(this.scene, shooter.x + 12, shooter.y - 8, () => (this.canShootTarget(target, range) ? target : undefined), 620, 0xf59e0b, () => {
+    this.nextShotAt = time + this.fireRate;
+    Projectile.homing(this.scene, shooter.x + 12, shooter.y - 8, () => (this.canShootTarget(target, this.range) ? target : undefined), 620, 0xf59e0b, () => {
       if (target instanceof WizardEnemy && target.hasActiveShield()) {
         target.pulseShield();
         return;
       }
-      if (target.alive) target.takeDamage(damage);
+      if (target.alive) target.takeDamage(this.damage);
     });
   }
 

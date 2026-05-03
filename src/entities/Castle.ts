@@ -155,8 +155,8 @@ export class Castle {
     if (this.mageLevel <= 0) return;
     const x = 58;
     const y = 82;
-    const maxHp = 24 + this.mageLevel * 8;
-    const body = this.scene.add.circle(x, y, 12 + this.mageLevel * 2, 0x60a5fa).setStrokeStyle(2, 0x1e3a8a);
+    const maxHp = 32;
+    const body = this.scene.add.circle(x, y, 14, 0x60a5fa).setStrokeStyle(2, 0x1e3a8a);
     const label = this.scene.add.text(x, y - 3, 'M', { color: '#eff6ff', fontSize: '12px', fontStyle: 'bold' }).setOrigin(0.5);
     const hpBack = this.scene.add.rectangle(x, y + 18, 28, 4, 0x1f2937).setOrigin(0.5);
     const hpBar = this.scene.add.rectangle(x, y + 18, 28, 4, 0x22c55e).setOrigin(0.5);

@@ -5,6 +5,9 @@ import { Projectile } from '../entities/Projectile';
 
 export class MageSystem {
   private nextCastAt = 0;
+  private readonly cooldown = 5100;
+  private readonly radius = 106;
+  private readonly damage = 13;
 
   constructor(private scene: Phaser.Scene, private castle: Castle, private level: number, private getEnemies: () => Enemy[]) {}
 
@@ -16,12 +19,9 @@ export class MageSystem {
       .filter((enemy) => enemy.alive)
       .sort((a, b) => a.x - b.x)[0];
     if (!target) return;
-    const cooldown = Math.max(2600, 6000 - this.level * 900);
-    const radius = 90 + this.level * 22;
-    const damage = 8 + this.level * 7;
-    this.nextCastAt = time + cooldown;
+    this.nextCastAt = time + this.cooldown;
     Projectile.homing(this.scene, mage.x + 10, mage.y + 2, () => (target.alive ? target : undefined), 560, 0x60a5fa, () => {
-      this.resolveSpellHit(time, target, radius, damage);
+      this.resolveSpellHit(time, target, this.radius, this.damage);
     });
   }
 

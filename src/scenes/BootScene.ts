@@ -8,9 +8,9 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     const assetBasePath = this.getAssetBasePath();
-    this.load.spritesheet('basic-knight-walk-sheet', `${assetBasePath}assets/Knight1/KnightWalkSheet.png?v=20260503-122225`, {
-      frameWidth: 340,
-      frameHeight: 520
+    this.load.spritesheet('basic-knight-walk-sheet', `${assetBasePath}assets/Knight1/KnightWalkSheet.png?v=20260503-run`, {
+      frameWidth: 474,
+      frameHeight: 723
     });
   }
 
@@ -18,8 +18,8 @@ export class BootScene extends Phaser.Scene {
     if (this.textures.exists('basic-knight-walk-sheet') && !this.anims.exists('basic-walk')) {
       this.anims.create({
         key: 'basic-walk',
-        frames: this.anims.generateFrameNumbers('basic-knight-walk-sheet', { start: 0, end: 7 }),
-        frameRate: 11,
+        frames: this.anims.generateFrameNumbers('basic-knight-walk-sheet', { start: 0, end: 35 }),
+        frameRate: 18,
         repeat: -1
       });
     }
