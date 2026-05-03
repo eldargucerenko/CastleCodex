@@ -22,10 +22,10 @@ export class ArcherEnemy extends Enemy {
       this.state = 'ShootCastle';
       if (time - this.lastShotAt > (this.stats.projectileRateMs ?? 1500)) {
         this.lastShotAt = time;
-        const playerArcher = castle.getLivingArcherTarget();
-        if (playerArcher) {
-          new Projectile(this.scene, this.x, this.y - 6, playerArcher.x, playerArcher.y, 420, 0xffd166, () => {
-            castle.damageArcher(playerArcher, Math.ceil(playerArcher.maxHp / 2));
+        const defender = castle.getLivingDefenderTarget();
+        if (defender) {
+          new Projectile(this.scene, this.x, this.y - 6, defender.x, defender.y, 420, 0xffd166, () => {
+            castle.damageDefender(defender, Math.ceil(defender.maxHp / 2));
           });
         } else {
           new Projectile(this.scene, this.x, this.y - 6, castle.width + 12, this.y - 20, 420, 0xffd166, () => {

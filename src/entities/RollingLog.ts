@@ -9,6 +9,7 @@ export class RollingLog {
   private destroyed = false;
   private hitEnemies = new WeakSet<Enemy>();
   private readonly damage = Math.ceil(ENEMY_STATS.basic.hp / 3);
+  private readonly laneHitHalfHeight = 72;
 
   constructor(
     private scene: Phaser.Scene,
@@ -33,7 +34,7 @@ export class RollingLog {
     for (const enemy of this.getEnemies()) {
       if (!enemy.alive || enemy.state === 'Dead' || enemy.state === 'Grabbed' || this.hitEnemies.has(enemy)) continue;
       const overlapsX = Math.abs(enemy.x - this.body.x) <= enemy.stats.radius + this.body.width / 2;
-      const overlapsY = Math.abs(enemy.y - this.body.y) <= enemy.stats.radius + this.body.height / 2 + 10;
+      const overlapsY = Math.abs(enemy.y - this.body.y) <= enemy.stats.radius + this.laneHitHalfHeight;
       if (!overlapsX || !overlapsY) continue;
 
       this.hitEnemies.add(enemy);

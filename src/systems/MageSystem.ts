@@ -1,16 +1,17 @@
 import Phaser from 'phaser';
-import { Mage } from '../entities/Mage';
 import type { Enemy } from '../entities/Enemy';
+import type { Castle } from '../entities/Castle';
+import { Projectile } from '../entities/Projectile';
 
 export class MageSystem {
   private nextCastAt = 0;
 
-  constructor(private scene: Phaser.Scene, private level: number, private getEnemies: () => Enemy[]) {
-    if (level > 0) new Mage(scene, level);
-  }
+  constructor(private scene: Phaser.Scene, private castle: Castle, private level: number, private getEnemies: () => Enemy[]) {}
 
   update(time: number): void {
-    if (this.level <= 0 || time < this.nextCastAt) return;
+    if (this.level <= 0 || !this.castle.hasLivingMage() || time < this.nextCastAt) return;
+    const mage = this.castle.getLivingMageTarget();
+    if (!mage) return;
     const target = this.getEnemies()
       .filter((enemy) => enemy.alive)
       .sort((a, b) => a.x - b.x)[0];
@@ -19,6 +20,13 @@ export class MageSystem {
     const radius = 90 + this.level * 22;
     const damage = 8 + this.level * 7;
     this.nextCastAt = time + cooldown;
+    Projectile.homing(this.scene, mage.x + 10, mage.y + 2, () => (target.alive ? target : undefined), 560, 0x60a5fa, () => {
+      this.resolveSpellHit(time, target, radius, damage);
+    });
+  }
+
+  private resolveSpellHit(time: number, target: Enemy, radius: number, damage: number): void {
+    if (!target.alive) return;
     const ring = this.scene.add.circle(target.x, target.y, 8, 0x60a5fa, 0.16).setStrokeStyle(3, 0x2563eb, 0.65).setDepth(6);
     this.scene.tweens.add({
       targets: ring,

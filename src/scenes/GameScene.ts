@@ -28,6 +28,8 @@ export class GameScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
   private enemiesText!: Phaser.GameObjects.Text;
   private hasTemporaryLevelOneArcher = false;
+  private hasTemporaryLevelOneMage = false;
+  private hasTemporaryLevelOneLog = false;
 
   constructor() {
     super('GameScene');
@@ -39,18 +41,24 @@ export class GameScene extends Phaser.Scene {
     this.killed = 0;
     this.finishing = false;
     this.hasTemporaryLevelOneArcher = this.save.currentLevel === 1 && this.save.archerLevel <= 0;
+    this.hasTemporaryLevelOneMage = this.save.currentLevel === 1 && this.save.mageLevel <= 0;
+    this.hasTemporaryLevelOneLog = this.save.currentLevel === 1 && this.save.logTrapCount <= 0;
+    const effectiveMageLevel = this.hasTemporaryLevelOneMage ? 1 : this.save.mageLevel;
+    const effectiveLogTrapCount = this.hasTemporaryLevelOneLog ? 1 : this.save.logTrapCount;
 
     this.createWorld();
     this.castle = new Castle(this, {
       ...this.save,
-      archerLevel: this.hasTemporaryLevelOneArcher ? 1 : this.save.archerLevel
+      archerLevel: this.hasTemporaryLevelOneArcher ? 1 : this.save.archerLevel,
+      mageLevel: effectiveMageLevel,
+      logTrapCount: effectiveLogTrapCount
     });
     this.wave = new WaveManager(this, this.save.currentLevel, (enemy) => this.enemies.push(enemy));
     this.dragSystem = new DragThrowSystem(this, this.castle, () => this.enemies);
     this.archerSystem = new ArcherSystem(this, this.castle, () => this.enemies);
     this.trapSystem = new TrapSystem(this, this.castle.trapLevel, () => this.enemies);
-    this.mageSystem = new MageSystem(this, this.castle.mageLevel, () => this.enemies);
-    if (this.save.logTrapCount > 0) {
+    this.mageSystem = new MageSystem(this, this.castle, this.castle.mageLevel, () => this.enemies);
+    if (effectiveLogTrapCount > 0) {
       this.rollingLog = new RollingLog(this, () => this.enemies, () => this.consumeRollingLog());
     }
     this.createUi();
@@ -136,6 +144,12 @@ export class GameScene extends Phaser.Scene {
     if (this.hasTemporaryLevelOneArcher) {
       this.save.archerLevel = 0;
     }
+    if (this.hasTemporaryLevelOneMage) {
+      this.save.mageLevel = 0;
+    }
+    if (this.hasTemporaryLevelOneLog) {
+      this.save.logTrapCount = 0;
+    }
     SaveSystem.save(this.save);
     this.floatText(Number(this.game.config.width) / 2, 170, `Level clear +${reward}g`, '#14532d');
     this.time.delayedCall(900, () => {
@@ -149,6 +163,12 @@ export class GameScene extends Phaser.Scene {
     Object.assign(this.save, this.castle.toProgress());
     if (this.hasTemporaryLevelOneArcher) {
       this.save.archerLevel = 0;
+    }
+    if (this.hasTemporaryLevelOneMage) {
+      this.save.mageLevel = 0;
+    }
+    if (this.hasTemporaryLevelOneLog) {
+      this.save.logTrapCount = 0;
     }
     SaveSystem.save(this.save);
     this.cleanupSystems();

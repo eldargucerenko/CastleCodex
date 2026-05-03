@@ -1,12 +1,15 @@
 import Phaser from 'phaser';
 import type { CastleProgress } from '../types/game';
 
-export interface PlayerArcherTarget {
+export interface PlayerDefenderTarget {
+  kind: 'archer' | 'mage';
   x: number;
   y: number;
   hp: number;
   maxHp: number;
 }
+
+export type PlayerArcherTarget = PlayerDefenderTarget;
 
 export class Castle {
   readonly x = 0;
@@ -25,13 +28,19 @@ export class Castle {
   private hpBar: Phaser.GameObjects.Rectangle;
   private hpBack: Phaser.GameObjects.Rectangle;
   private playerArchers: Array<
-    PlayerArcherTarget & {
+    PlayerDefenderTarget & {
       body: Phaser.GameObjects.Arc;
       label: Phaser.GameObjects.Text;
       hpBack: Phaser.GameObjects.Rectangle;
       hpBar: Phaser.GameObjects.Rectangle;
     }
   > = [];
+  private playerMage?: PlayerDefenderTarget & {
+    body: Phaser.GameObjects.Arc;
+    label: Phaser.GameObjects.Text;
+    hpBack: Phaser.GameObjects.Rectangle;
+    hpBar: Phaser.GameObjects.Rectangle;
+  };
 
   constructor(private scene: Phaser.Scene, progress: CastleProgress) {
     this.bottom = Number(scene.game.config.height) - 56;
@@ -54,6 +63,7 @@ export class Castle {
     this.hpBack = scene.add.rectangle(14, 28, 250, 14, 0x1f2937).setOrigin(0, 0.5);
     this.hpBar = scene.add.rectangle(14, 28, 250, 14, 0x22c55e).setOrigin(0, 0.5);
     this.createPlayerArchers();
+    this.createPlayerMage();
     this.refreshHpBar();
   }
 
@@ -74,16 +84,37 @@ export class Castle {
     return this.playerArchers.find((archer) => archer.hp > 0);
   }
 
+  getLivingDefenderTarget(): PlayerDefenderTarget | undefined {
+    const targets: PlayerDefenderTarget[] = this.playerArchers.filter((archer) => archer.hp > 0);
+    if (this.playerMage && this.playerMage.hp > 0) {
+      targets.push(this.playerMage);
+    }
+    return Phaser.Utils.Array.GetRandom(targets);
+  }
+
+  getLivingMageTarget(): PlayerDefenderTarget | undefined {
+    return this.playerMage && this.playerMage.hp > 0 ? this.playerMage : undefined;
+  }
+
   getLivingArcherCount(): number {
     return this.playerArchers.filter((archer) => archer.hp > 0).length;
   }
 
+  hasLivingMage(): boolean {
+    return (this.playerMage?.hp ?? 0) > 0;
+  }
+
+  damageDefender(target: PlayerDefenderTarget, amount: number): void {
+    const defender =
+      target.kind === 'mage' ? (this.playerMage === target ? this.playerMage : undefined) : this.playerArchers.find((candidate) => candidate === target);
+    if (!defender || defender.hp <= 0) return;
+    defender.hp = Math.max(0, defender.hp - amount);
+    this.refreshDefender(defender);
+    this.scene.tweens.add({ targets: defender.body, scaleX: 1.25, scaleY: 1.25, yoyo: true, duration: 90 });
+  }
+
   damageArcher(target: PlayerArcherTarget, amount: number): void {
-    const archer = this.playerArchers.find((candidate) => candidate === target);
-    if (!archer || archer.hp <= 0) return;
-    archer.hp = Math.max(0, archer.hp - amount);
-    this.refreshArcher(archer);
-    this.scene.tweens.add({ targets: archer.body, scaleX: 1.25, scaleY: 1.25, yoyo: true, duration: 90 });
+    this.damageDefender(target, amount);
   }
 
   toProgress(): CastleProgress {
@@ -116,27 +147,40 @@ export class Castle {
       const label = this.scene.add.text(x, y - 4, 'A', { color: '#78350f', fontSize: '10px', fontStyle: 'bold' }).setOrigin(0.5);
       const hpBack = this.scene.add.rectangle(x, y + 13, 22, 4, 0x1f2937).setOrigin(0.5);
       const hpBar = this.scene.add.rectangle(x, y + 13, 22, 4, 0x22c55e).setOrigin(0.5);
-      this.playerArchers.push({ x, y, hp: maxHp, maxHp, body, label, hpBack, hpBar });
+      this.playerArchers.push({ kind: 'archer', x, y, hp: maxHp, maxHp, body, label, hpBack, hpBar });
     }
   }
 
-  private refreshArcher(
-    archer: PlayerArcherTarget & {
+  private createPlayerMage(): void {
+    if (this.mageLevel <= 0) return;
+    const x = 58;
+    const y = 82;
+    const maxHp = 24 + this.mageLevel * 8;
+    const body = this.scene.add.circle(x, y, 12 + this.mageLevel * 2, 0x60a5fa).setStrokeStyle(2, 0x1e3a8a);
+    const label = this.scene.add.text(x, y - 3, 'M', { color: '#eff6ff', fontSize: '12px', fontStyle: 'bold' }).setOrigin(0.5);
+    const hpBack = this.scene.add.rectangle(x, y + 18, 28, 4, 0x1f2937).setOrigin(0.5);
+    const hpBar = this.scene.add.rectangle(x, y + 18, 28, 4, 0x22c55e).setOrigin(0.5);
+    this.playerMage = { kind: 'mage', x, y, hp: maxHp, maxHp, body, label, hpBack, hpBar };
+  }
+
+  private refreshDefender(
+    defender: PlayerDefenderTarget & {
       body: Phaser.GameObjects.Arc;
       label: Phaser.GameObjects.Text;
       hpBack: Phaser.GameObjects.Rectangle;
       hpBar: Phaser.GameObjects.Rectangle;
     }
   ): void {
-    const ratio = Phaser.Math.Clamp(archer.hp / archer.maxHp, 0, 1);
-    archer.hpBar.width = 22 * ratio;
-    archer.hpBar.x = archer.x - (22 - archer.hpBar.width) / 2;
-    if (archer.hp <= 0) {
-      archer.body.setFillStyle(0x6b7280);
-      archer.body.setAlpha(0.35);
-      archer.label.setAlpha(0.35);
-      archer.hpBack.setVisible(false);
-      archer.hpBar.setVisible(false);
+    const maxWidth = defender.kind === 'mage' ? 28 : 22;
+    const ratio = Phaser.Math.Clamp(defender.hp / defender.maxHp, 0, 1);
+    defender.hpBar.width = maxWidth * ratio;
+    defender.hpBar.x = defender.x - (maxWidth - defender.hpBar.width) / 2;
+    if (defender.hp <= 0) {
+      defender.body.setFillStyle(0x6b7280);
+      defender.body.setAlpha(0.35);
+      defender.label.setAlpha(0.35);
+      defender.hpBack.setVisible(false);
+      defender.hpBar.setVisible(false);
     }
   }
 }
