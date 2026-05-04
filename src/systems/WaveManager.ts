@@ -17,6 +17,7 @@ export class WaveManager {
   private static readonly laneSpacing = 13;
   private queue: EnemyKind[] = [];
   private nextSpawnAt = 0;
+  private paused = false;
   readonly totalCount: number;
 
   constructor(private scene: Phaser.Scene, level: number, private onSpawn: (enemy: Enemy) => void) {
@@ -35,6 +36,10 @@ export class WaveManager {
   }
 
   update(time: number): void {
+    if (this.paused) {
+      this.nextSpawnAt = Math.max(this.nextSpawnAt, time);
+      return;
+    }
     if (this.queue.length === 0 || time < this.nextSpawnAt) return;
     const kind = this.queue.shift();
     if (!kind) return;
@@ -44,6 +49,28 @@ export class WaveManager {
     const y = groundY - ENEMY_STATS[kind].radius;
     this.onSpawn(this.createEnemy(kind, x, y, groundY));
     this.nextSpawnAt = time + Phaser.Math.Between(620, 1050);
+  }
+
+  pause(): void {
+    this.paused = true;
+  }
+
+  resume(): void {
+    this.paused = false;
+  }
+
+  spawnAt(kind: EnemyKind, x: number, y: number, groundY: number): Enemy {
+    const enemy = this.createEnemy(kind, x, y, groundY);
+    this.onSpawn(enemy);
+    return enemy;
+  }
+
+  spawnFromEdge(kind: EnemyKind): Enemy {
+    const width = Number(this.scene.game.config.width);
+    const groundY = this.pickLaneGroundY();
+    const x = width + Phaser.Math.Between(20, 120);
+    const y = groundY - ENEMY_STATS[kind].radius;
+    return this.spawnAt(kind, x, y, groundY);
   }
 
   private createEnemy(kind: EnemyKind, x: number, y: number, groundY: number): Enemy {

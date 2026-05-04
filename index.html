@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Castle Codex</title>
+    <!--
+      GamePush SDK loader.
+      TODO: replace projectId / publicToken with the values from your project on
+      https://gamepush.com/dashboard before publishing. With placeholders the
+      SDK never resolves and the game falls back to localStorage-only mode.
+    -->
+    <script async src="https://gamepush.com/sdk/gamepush.js?projectId=YOUR_PROJECT_ID&publicToken=YOUR_PUBLIC_TOKEN&callback=onGPInit"></script>
+    <script>
+      window.__gpReady = new Promise(function (resolve) {
+        window.onGPInit = function (gp) {
+          window.gp = gp;
+          resolve(gp);
+        };
+      });
+    </script>
   </head>
   <body>
     <div id="game"></div>
