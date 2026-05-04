@@ -33,10 +33,16 @@ export class UpgradeScene extends Phaser.Scene {
     const upgrades: Array<{ key: UpgradeKey; title: string; detail: string; level: number; max?: number }> = [
       { key: 'repair', title: 'Repair Castle', detail: 'Restore castle HP', level: this.save.currentHp >= this.save.maxHp ? 1 : 0, max: 1 },
       { key: 'walls', title: 'Reinforce Walls', detail: 'More HP and damage reduction', level: this.save.wallLevel },
-      { key: 'archers', title: 'Archers', detail: 'Auto-shoot nearest enemies', level: this.save.archerLevel },
+      { key: 'archers', title: 'Archers', detail: 'Auto-shoot random available enemies', level: this.save.archerLevel },
       { key: 'log', title: 'Rolling Log', detail: 'One-use castle log trap', level: this.save.logTrapCount, max: 1 },
       { key: 'mage', title: 'Mage', detail: 'Auto AoE damage and slow', level: this.save.mageLevel }
     ];
+    if (Number.isFinite(UpgradeSystem.getCost(this.save, 'healArchers'))) {
+      upgrades.splice(3, 0, { key: 'healArchers', title: 'Heal Archers', detail: 'Restore defender archer HP', level: 0, max: 1 });
+    }
+    if (Number.isFinite(UpgradeSystem.getCost(this.save, 'healMage'))) {
+      upgrades.push({ key: 'healMage', title: 'Heal Mage', detail: 'Restore defender mage HP', level: 0, max: 1 });
+    }
 
     upgrades.forEach((upgrade, index) => {
       const x = width / 2;

@@ -143,9 +143,11 @@ export class GameScene extends Phaser.Scene {
     Object.assign(this.save, this.castle.toProgress());
     if (this.hasTemporaryLevelOneArcher) {
       this.save.archerLevel = 0;
+      this.save.archerHp = [];
     }
     if (this.hasTemporaryLevelOneMage) {
       this.save.mageLevel = 0;
+      this.save.mageHp = undefined;
     }
     if (this.hasTemporaryLevelOneLog) {
       this.save.logTrapCount = 0;
@@ -163,9 +165,11 @@ export class GameScene extends Phaser.Scene {
     Object.assign(this.save, this.castle.toProgress());
     if (this.hasTemporaryLevelOneArcher) {
       this.save.archerLevel = 0;
+      this.save.archerHp = [];
     }
     if (this.hasTemporaryLevelOneMage) {
       this.save.mageLevel = 0;
+      this.save.mageHp = undefined;
     }
     if (this.hasTemporaryLevelOneLog) {
       this.save.logTrapCount = 0;

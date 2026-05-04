@@ -34,6 +34,8 @@ export interface CastleProgress {
   trapLevel: number;
   mageLevel: number;
   logTrapCount: number;
+  archerHp: number[];
+  mageHp?: number;
 }
 
 export interface SaveData extends CastleProgress {
@@ -71,7 +73,7 @@ export interface LevelDefinition {
   waves: LevelWaveEntry[];
 }
 
-export type UpgradeKey = 'repair' | 'walls' | 'archers' | 'traps' | 'mage' | 'log';
+export type UpgradeKey = 'repair' | 'walls' | 'archers' | 'healArchers' | 'traps' | 'mage' | 'healMage' | 'log';
 
 export interface UpgradeCostTable {
   walls: number[];

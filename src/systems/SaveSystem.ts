@@ -13,7 +13,9 @@ export const DEFAULT_SAVE: SaveData = {
   archerLevel: 0,
   trapLevel: 0,
   mageLevel: 0,
-  logTrapCount: 0
+  logTrapCount: 0,
+  archerHp: [],
+  mageHp: undefined
 };
 
 export class SaveSystem {

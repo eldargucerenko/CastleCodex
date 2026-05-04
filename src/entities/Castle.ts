@@ -24,6 +24,8 @@ export class Castle {
   trapLevel: number;
   mageLevel: number;
   logTrapCount: number;
+  archerHp: number[];
+  mageHp?: number;
   private body: Phaser.GameObjects.Rectangle;
   private hpBar: Phaser.GameObjects.Rectangle;
   private hpBack: Phaser.GameObjects.Rectangle;
@@ -52,6 +54,8 @@ export class Castle {
     this.trapLevel = progress.trapLevel;
     this.mageLevel = progress.mageLevel;
     this.logTrapCount = progress.logTrapCount;
+    this.archerHp = progress.archerHp;
+    this.mageHp = progress.mageHp;
 
     const height = this.bottom - this.top;
     this.body = scene.add.rectangle(this.width / 2, this.top + height / 2, this.width, height, 0x8b5e3c);
@@ -126,7 +130,9 @@ export class Castle {
       archerLevel: this.archerLevel,
       trapLevel: this.trapLevel,
       mageLevel: this.mageLevel,
-      logTrapCount: this.logTrapCount
+      logTrapCount: this.logTrapCount,
+      archerHp: this.playerArchers.map((archer) => archer.hp),
+      mageHp: this.playerMage?.hp
     };
   }
 
@@ -143,11 +149,14 @@ export class Castle {
       const x = 84;
       const y = 140 + i * 42;
       const maxHp = 20;
+      const hp = Phaser.Math.Clamp(this.archerHp[i] ?? maxHp, 0, maxHp);
       const body = this.scene.add.circle(x, y, 8, 0xfef3c7).setStrokeStyle(2, 0x78350f);
       const label = this.scene.add.text(x, y - 4, 'A', { color: '#78350f', fontSize: '10px', fontStyle: 'bold' }).setOrigin(0.5);
       const hpBack = this.scene.add.rectangle(x, y + 13, 22, 4, 0x1f2937).setOrigin(0.5);
       const hpBar = this.scene.add.rectangle(x, y + 13, 22, 4, 0x22c55e).setOrigin(0.5);
-      this.playerArchers.push({ kind: 'archer', x, y, hp: maxHp, maxHp, body, label, hpBack, hpBar });
+      const archer = { kind: 'archer' as const, x, y, hp, maxHp, body, label, hpBack, hpBar };
+      this.playerArchers.push(archer);
+      this.refreshDefender(archer);
     }
   }
 
@@ -156,11 +165,13 @@ export class Castle {
     const x = 58;
     const y = 82;
     const maxHp = 32;
+    const hp = Phaser.Math.Clamp(this.mageHp ?? maxHp, 0, maxHp);
     const body = this.scene.add.circle(x, y, 14, 0x60a5fa).setStrokeStyle(2, 0x1e3a8a);
     const label = this.scene.add.text(x, y - 3, 'M', { color: '#eff6ff', fontSize: '12px', fontStyle: 'bold' }).setOrigin(0.5);
     const hpBack = this.scene.add.rectangle(x, y + 18, 28, 4, 0x1f2937).setOrigin(0.5);
     const hpBar = this.scene.add.rectangle(x, y + 18, 28, 4, 0x22c55e).setOrigin(0.5);
-    this.playerMage = { kind: 'mage', x, y, hp: maxHp, maxHp, body, label, hpBack, hpBar };
+    this.playerMage = { kind: 'mage', x, y, hp, maxHp, body, label, hpBack, hpBar };
+    this.refreshDefender(this.playerMage);
   }
 
   private refreshDefender(
