@@ -24,6 +24,11 @@ export class DragThrowSystem {
     scene.input.on('pointermove', this.onPointerMove, this);
     scene.input.on('pointerup', this.onPointerUp, this);
     scene.input.on('pointerupoutside', this.onPointerUp, this);
+    // 'gameout' fires when the pointer leaves the canvas while still pressed.
+    // Phaser stops sending pointermove events past the edge, so without this
+    // a grabbed enemy would freeze in place; release it as if the user had
+    // let go right at the border.
+    scene.input.on('gameout', this.onGameOut, this);
   }
 
   destroy(): void {
@@ -31,6 +36,7 @@ export class DragThrowSystem {
     this.scene.input.off('pointermove', this.onPointerMove, this);
     this.scene.input.off('pointerup', this.onPointerUp, this);
     this.scene.input.off('pointerupoutside', this.onPointerUp, this);
+    this.scene.input.off('gameout', this.onGameOut, this);
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
@@ -79,13 +85,27 @@ export class DragThrowSystem {
   }
 
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
+    this.cancelCoolingIfAny();
+    if (!this.grabbed) return;
+    this.samples.push({ x: pointer.worldX, y: pointer.worldY, time: pointer.event.timeStamp });
+    this.releaseGrabbed();
+  }
+
+  private onGameOut(): void {
+    this.cancelCoolingIfAny();
+    if (!this.grabbed) return;
+    this.releaseGrabbed();
+  }
+
+  private cancelCoolingIfAny(): void {
     if (this.cooling && this.cooling.burningState === 'Cooling') {
       this.cooling.cancelCooling();
     }
     this.cooling = undefined;
+  }
 
+  private releaseGrabbed(): void {
     if (!this.grabbed) return;
-    this.samples.push({ x: pointer.worldX, y: pointer.worldY, time: pointer.event.timeStamp });
     const first = this.samples[0];
     const last = this.samples[this.samples.length - 1];
     const elapsed = Math.max(16, last.time - first.time);
