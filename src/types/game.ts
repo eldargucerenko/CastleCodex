@@ -42,6 +42,7 @@ export interface SaveData extends CastleProgress {
   currentLevel: number;
   gold: number;
   completedLevels: number;
+  tutorialCompleted: boolean;
 }
 
 export interface EnemyStats {

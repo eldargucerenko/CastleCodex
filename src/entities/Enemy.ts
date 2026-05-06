@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ENEMY_STATS } from '../data/enemies';
+import { DebugCheatSystem } from '../systems/DebugCheatSystem';
 import type { BurningState, EnemyKind, EnemyState, EnemyStats, WizardState } from '../types/game';
 import type { Castle } from './Castle';
 
@@ -16,6 +17,7 @@ export class Enemy extends Phaser.GameObjects.Container {
   lastAttackAt = 0;
   isGrabbed = false;
   justDied = false;
+  walkPaused = false;
   readonly groundY: number;
   protected shape: Phaser.GameObjects.Graphics;
   protected labelText: Phaser.GameObjects.Text;
@@ -26,7 +28,7 @@ export class Enemy extends Phaser.GameObjects.Container {
   constructor(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind, groundY?: number) {
     super(scene, x, y);
     this.kind = kind;
-    this.stats = ENEMY_STATS[kind];
+    this.stats = DebugCheatSystem.applyTo(ENEMY_STATS[kind]);
     this.hp = this.stats.hp;
     this.groundY = groundY ?? Number(scene.game.config.height) - 72;
 
@@ -142,6 +144,10 @@ export class Enemy extends Phaser.GameObjects.Container {
     }
 
     this.state = 'WalkToCastle';
+    if (this.walkPaused) {
+      this.refreshDepth();
+      return;
+    }
     const slow = time < this.isSlowedUntil ? 0.45 : 1;
     this.x -= this.stats.speed * slow * (delta / 1000);
     this.refreshDepth();

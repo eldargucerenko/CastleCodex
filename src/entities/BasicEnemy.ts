@@ -18,4 +18,11 @@ export class BasicEnemy extends Enemy {
     this.sprite.play('basic-walk');
     this.addAt(this.sprite, 0);
   }
+
+  override containsPoint(x: number, y: number): boolean {
+    if (!this.sprite) return super.containsPoint(x, y);
+    const halfW = 50;
+    const halfH = 70;
+    return Math.abs(x - this.x) <= halfW && Math.abs(y - (this.y - 18)) <= halfH;
+  }
 }

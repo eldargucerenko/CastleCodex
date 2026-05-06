@@ -1,15 +1,19 @@
 import Phaser from 'phaser';
 import { Castle } from '../entities/Castle';
 import type { Enemy } from '../entities/Enemy';
+import { gameplayStart, gameplayStop, subscribeSdkPause, trackLevelStart } from '../sdk/gamepush';
 import { ArcherSystem } from '../systems/ArcherSystem';
+import { DebugPanelUI } from '../systems/DebugPanelUI';
 import { DragThrowSystem } from '../systems/DragThrowSystem';
 import { EconomySystem } from '../systems/EconomySystem';
 import { MageSystem } from '../systems/MageSystem';
 import { SaveSystem } from '../systems/SaveSystem';
 import { TrapSystem } from '../systems/TrapSystem';
 import { WaveManager } from '../systems/WaveManager';
-import type { SaveData } from '../types/game';
+import type { EnemyKind, SaveData } from '../types/game';
 import { RollingLog } from '../entities/RollingLog';
+import { TutorialSystem } from '../systems/TutorialSystem';
+import { ENEMY_STATS } from '../data/enemies';
 
 export class GameScene extends Phaser.Scene {
   private save!: SaveData;
@@ -20,6 +24,7 @@ export class GameScene extends Phaser.Scene {
   private trapSystem!: TrapSystem;
   private mageSystem!: MageSystem;
   private rollingLog?: RollingLog;
+  private tutorial?: TutorialSystem;
   private enemies: Enemy[] = [];
   private killed = 0;
   private finishing = false;
@@ -30,6 +35,8 @@ export class GameScene extends Phaser.Scene {
   private hasTemporaryLevelOneArcher = false;
   private hasTemporaryLevelOneMage = false;
   private hasTemporaryLevelOneLog = false;
+  private unsubscribePause?: () => void;
+  private onVisibilityChange?: () => void;
 
   constructor() {
     super('GameScene');
@@ -40,9 +47,10 @@ export class GameScene extends Phaser.Scene {
     this.enemies = [];
     this.killed = 0;
     this.finishing = false;
-    this.hasTemporaryLevelOneArcher = this.save.currentLevel === 1 && this.save.archerLevel <= 0;
-    this.hasTemporaryLevelOneMage = this.save.currentLevel === 1 && this.save.mageLevel <= 0;
-    this.hasTemporaryLevelOneLog = this.save.currentLevel === 1 && this.save.logTrapCount <= 0;
+    const tutorialPending = !this.save.tutorialCompleted && this.save.currentLevel === 1;
+    this.hasTemporaryLevelOneArcher = !tutorialPending && this.save.currentLevel === 1 && this.save.archerLevel <= 0;
+    this.hasTemporaryLevelOneMage = !tutorialPending && this.save.currentLevel === 1 && this.save.mageLevel <= 0;
+    this.hasTemporaryLevelOneLog = !tutorialPending && this.save.currentLevel === 1 && this.save.logTrapCount <= 0;
     const effectiveMageLevel = this.hasTemporaryLevelOneMage ? 1 : this.save.mageLevel;
     const effectiveLogTrapCount = this.hasTemporaryLevelOneLog ? 1 : this.save.logTrapCount;
 
@@ -62,11 +70,98 @@ export class GameScene extends Phaser.Scene {
       this.rollingLog = new RollingLog(this, () => this.enemies, () => this.consumeRollingLog());
     }
     this.createUi();
+    this.maybeStartTutorial();
+    DebugPanelUI.ensureMounted({
+      spawnHandler: (kind) => this.spawnDebugEnemy(kind),
+      getSpawnEnabled: () => this.scene.isActive() && !this.finishing
+    });
+    this.wireSdkLifecycle();
   }
 
-  update(time: number, delta: number): void {
+  private wireSdkLifecycle(): void {
+    trackLevelStart(this.save.currentLevel);
+    gameplayStart();
+
+    this.unsubscribePause = subscribeSdkPause((paused) => {
+      if (paused) {
+        gameplayStop();
+        this.scene.pause();
+      } else {
+        this.scene.resume();
+        gameplayStart();
+      }
+    });
+
+    this.onVisibilityChange = () => {
+      if (document.hidden) {
+        gameplayStop();
+      } else if (this.scene.isActive() && !this.finishing) {
+        gameplayStart();
+      }
+    };
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      gameplayStop();
+      this.unsubscribePause?.();
+      this.unsubscribePause = undefined;
+      if (this.onVisibilityChange) {
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+        this.onVisibilityChange = undefined;
+      }
+    });
+  }
+
+  private spawnDebugEnemy(kind: EnemyKind): void {
     if (this.finishing) return;
+    this.wave.spawnFromEdge(kind);
+  }
+
+  private maybeStartTutorial(): void {
+    if (this.save.tutorialCompleted || this.save.currentLevel !== 1) return;
+    this.wave.pause();
+    this.setStatsUiVisible(false);
+    this.tutorial = new TutorialSystem(
+      this,
+      this.castle,
+      () => this.spawnTutorialKnight(),
+      () => this.finishTutorial()
+    );
+  }
+
+  private setStatsUiVisible(visible: boolean): void {
+    this.levelText?.setVisible(visible);
+    this.hpText?.setVisible(visible);
+    this.goldText?.setVisible(visible);
+    this.enemiesText?.setVisible(visible);
+  }
+
+  private spawnTutorialKnight(): Enemy {
+    const width = Number(this.game.config.width);
+    const groundY = Number(this.game.config.height) - 72;
+    const stats = ENEMY_STATS.basic;
+    const x = Math.round(width * 0.62);
+    const y = groundY - stats.radius;
+    return this.wave.spawnAt('basic', x, y, groundY);
+  }
+
+  private finishTutorial(): void {
+    this.tutorial = undefined;
+    this.save.tutorialCompleted = true;
+    SaveSystem.save(this.save);
+    this.wave.resume();
+    this.setStatsUiVisible(true);
+  }
+
+  update(_time: number, delta: number): void {
+    if (this.finishing) return;
+    // Use the scene-local clock (this.time.now) instead of the game loop clock
+    // (the `time` argument). The scene clock pauses when scene.pause() is
+    // called by the GamePush platform-pause handler, so attack-rate / spawn /
+    // shot timestamps don't jump forward when the game resumes.
+    const time = this.time.now;
     this.wave.update(time);
+    this.tutorial?.update();
     this.archerSystem.update(time);
     this.trapSystem.update(time);
     this.mageSystem.update(time);
@@ -181,6 +276,8 @@ export class GameScene extends Phaser.Scene {
 
   private cleanupSystems(): void {
     this.dragSystem?.destroy();
+    this.tutorial?.destroy();
+    this.tutorial = undefined;
   }
 
   private consumeRollingLog(): void {

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { trackLevelReplay } from '../sdk/gamepush';
 import { SaveSystem } from '../systems/SaveSystem';
 
 export class GameOverScene extends Phaser.Scene {
@@ -9,10 +10,12 @@ export class GameOverScene extends Phaser.Scene {
   create(): void {
     const width = Number(this.game.config.width);
     const height = Number(this.game.config.height);
+    const lostLevel = SaveSystem.load().currentLevel;
     this.add.rectangle(width / 2, height / 2, width, height, 0x111827);
     this.add.text(width / 2, height / 2 - 70, 'Game Over', { color: '#fee2e2', fontSize: '46px', fontStyle: 'bold' }).setOrigin(0.5);
     this.add.text(width / 2, height / 2 - 18, 'The castle has fallen.', { color: '#e5e7eb', fontSize: '20px' }).setOrigin(0.5);
     this.button(width / 2, height / 2 + 58, 'Restart', () => {
+      trackLevelReplay(lostLevel);
       SaveSystem.reset();
       this.scene.start('GameScene');
     });
