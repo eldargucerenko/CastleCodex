@@ -1,23 +1,24 @@
 import Phaser from 'phaser';
 import { ENEMY_STATS } from '../data/enemies';
 import { DebugCheatSystem } from '../systems/DebugCheatSystem';
-import type { BurningState, EnemyKind, EnemyState, EnemyStats, WizardState } from '../types/game';
+import type { EnemyKind, EnemyState, EnemyStats, WizardState } from '../types/game';
 import type { Castle } from './Castle';
 
 // Chibi sprite key for each enemy kind (loaded by BootScene). Wizard variants
-// share the base wizard art.
+// share the base wizard art. fat is the "tosses other knights" enemy and
+// reads better as a big armored knight; trunk uses the log-carrier sprite.
 const SPRITE_BY_KIND: Partial<Record<EnemyKind, string>> = {
   basic: 'enemy-knight',
   archer: 'enemy-archer',
   bomber: 'enemy-bomber',
   jumper: 'enemy-jumper',
   raider: 'enemy-raider',
-  fat: 'enemy-fat',
+  fat: 'enemy-heavy-knight',
+  trunk: 'enemy-log-thrower',
   wizard: 'enemy-wizard',
   wizard_easy: 'enemy-wizard',
   wizard_medium: 'enemy-wizard',
-  wizard_hard: 'enemy-wizard',
-  burning: 'enemy-burning'
+  wizard_hard: 'enemy-wizard'
 };
 
 export class Enemy extends Phaser.GameObjects.Container {
@@ -25,7 +26,6 @@ export class Enemy extends Phaser.GameObjects.Container {
   readonly kind: EnemyKind;
   hp: number;
   state: EnemyState = 'Spawn';
-  burningState?: BurningState;
   wizardState?: WizardState;
   isSlowedUntil = 0;
   vx = 0;
@@ -82,7 +82,6 @@ export class Enemy extends Phaser.GameObjects.Container {
 
   get canBeGrabbed(): boolean {
     if (this.state === 'Dead' || this.state === 'Grabbed') return false;
-    if (this.kind === 'burning' && this.burningState !== 'Cooled') return false;
     if (this.kind.startsWith('wizard') && (this.wizardState === 'Shielded' || this.wizardState === 'Unlocking')) return false;
     return true;
   }

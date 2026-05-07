@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { BurningEnemy } from '../entities/BurningEnemy';
 import type { Castle } from '../entities/Castle';
 import type { Enemy } from '../entities/Enemy';
 import { WizardEnemy } from '../entities/WizardEnemy';
@@ -12,7 +11,6 @@ interface PointerSample {
 
 export class DragThrowSystem {
   private grabbed?: Enemy;
-  private cooling?: BurningEnemy;
   private samples: PointerSample[] = [];
 
   constructor(
@@ -62,15 +60,6 @@ export class DragThrowSystem {
       return;
     }
 
-    if (enemy instanceof BurningEnemy && enemy.burningState !== 'Cooled') {
-      this.cooling = enemy;
-      enemy.startCooling(() => {
-        this.scene.add.text(enemy.x, enemy.y - 44, 'cooled', { color: '#0284c7', fontSize: '13px', fontStyle: 'bold' }).setOrigin(0.5);
-      });
-      this.castle.takeDamage(1);
-      return;
-    }
-
     if (!enemy.canBeGrabbed) return;
     this.grabbed = enemy;
     this.samples = [{ x: pointer.worldX, y: pointer.worldY, time: pointer.event.timeStamp }];
@@ -85,23 +74,14 @@ export class DragThrowSystem {
   }
 
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
-    this.cancelCoolingIfAny();
     if (!this.grabbed) return;
     this.samples.push({ x: pointer.worldX, y: pointer.worldY, time: pointer.event.timeStamp });
     this.releaseGrabbed();
   }
 
   private onGameOut(): void {
-    this.cancelCoolingIfAny();
     if (!this.grabbed) return;
     this.releaseGrabbed();
-  }
-
-  private cancelCoolingIfAny(): void {
-    if (this.cooling && this.cooling.burningState === 'Cooling') {
-      this.cooling.cancelCooling();
-    }
-    this.cooling = undefined;
   }
 
   private releaseGrabbed(): void {

@@ -36,12 +36,12 @@ const CHIBI_SPRITE_BY_KIND: Partial<Record<EnemyKind, string>> = {
   bomber: 'enemies/bomber.png',
   jumper: 'enemies/hammerman.png',
   raider: 'enemies/raider.png',
-  fat: 'enemies/log_thrower.png',
+  fat: 'enemies/heavy_knight.png',
+  trunk: 'enemies/log_thrower.png',
   wizard: 'enemies/wizard.png',
   wizard_easy: 'enemies/wizard.png',
   wizard_medium: 'enemies/wizard.png',
-  wizard_hard: 'enemies/wizard.png',
-  burning: 'enemies/heavy_knight.png'
+  wizard_hard: 'enemies/wizard.png'
 };
 
 function buildIcon(kind: EnemyKind): HTMLSpanElement {

@@ -2,14 +2,15 @@ export type EnemyKind =
   | 'basic'
   | 'fat'
   | 'archer'
-  | 'burning'
+  // | 'burning'  // disabled: not in current enemy roster
   | 'wizard'
   | 'wizard_easy'
   | 'wizard_medium'
   | 'wizard_hard'
   | 'bomber'
   | 'raider'
-  | 'jumper';
+  | 'jumper'
+  | 'trunk';
 
 export type EnemyState =
   | 'Spawn'

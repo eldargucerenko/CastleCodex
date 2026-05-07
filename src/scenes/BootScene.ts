@@ -16,9 +16,9 @@ export class BootScene extends Phaser.Scene {
       ['enemy-bomber', 'bomber'],
       ['enemy-jumper', 'hammerman'],
       ['enemy-raider', 'raider'],
-      ['enemy-fat', 'log_thrower'],
-      ['enemy-wizard', 'wizard'],
-      ['enemy-burning', 'heavy_knight']
+      ['enemy-heavy-knight', 'heavy_knight'],
+      ['enemy-log-thrower', 'log_thrower'],
+      ['enemy-wizard', 'wizard']
     ];
     for (const [key, name] of chibi) {
       this.load.image(key, `${assetBasePath}assets/enemies/${name}.png`);

@@ -94,20 +94,42 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
     projectileDamage: 5,
     projectileRateMs: 1500
   },
-  burning: {
-    kind: 'burning',
-    hp: 56,
-    speed: 54,
-    attackDamage: 8,
-    attackRateMs: 900,
-    radius: 15,
-    mass: 1.35,
-    dragFollow: 0.38,
-    throwMultiplier: 0.5,
-    killReward: 10,
-    collisionDamageFactor: 0.05,
-    color: 0xf97316,
-    label: 'HOT'
+  // Disabled — not in the current enemy roster. Re-enable by uncommenting
+  // below, restoring the 'burning' union member in types/game.ts, and putting
+  // it back into level waves.
+  // burning: {
+  //   kind: 'burning',
+  //   hp: 56,
+  //   speed: 54,
+  //   attackDamage: 8,
+  //   attackRateMs: 900,
+  //   radius: 15,
+  //   mass: 1.35,
+  //   dragFollow: 0.38,
+  //   throwMultiplier: 0.5,
+  //   killReward: 10,
+  //   collisionDamageFactor: 0.05,
+  //   color: 0xf97316,
+  //   label: 'HOT'
+  // },
+  // Trunk: walks slowly with a heavy log. Higher impact damage than basic
+  // and a beefier health pool to compensate. The "extra damage" trait per
+  // the design comes through `attackDamage` plus a bumped collision factor
+  // so even a thrown trunk wallops the castle.
+  trunk: {
+    kind: 'trunk',
+    hp: 48,
+    speed: 36,
+    attackDamage: 14,
+    attackRateMs: 1100,
+    radius: 16,
+    mass: 1.4,
+    dragFollow: 0.34,
+    throwMultiplier: 0.52,
+    killReward: 8,
+    collisionDamageFactor: 0.07,
+    color: 0x7c3f1d,
+    label: 'T'
   },
   wizard: {
     kind: 'wizard',

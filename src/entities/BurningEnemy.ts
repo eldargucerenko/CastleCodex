@@ -1,3 +1,10 @@
+// Burning enemy is currently disabled — not in the canonical enemy roster.
+// Re-enable by uncommenting this file, restoring the 'burning' member of
+// EnemyKind in src/types/game.ts, the burning entry in src/data/enemies.ts,
+// the createEnemy branch in WaveManager, and the BurningEnemy hooks in
+// DragThrowSystem.
+
+/*
 import Phaser from 'phaser';
 import { Enemy } from './Enemy';
 
@@ -32,3 +39,7 @@ export class BurningEnemy extends Enemy {
     this.draw(0xf97316);
   }
 }
+*/
+
+// Stub export so any lingering imports don't break the build.
+export class BurningEnemy {}

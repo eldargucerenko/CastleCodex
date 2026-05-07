@@ -4,8 +4,7 @@ import { getLevel } from '../data/levels';
 import { ArcherEnemy } from '../entities/ArcherEnemy';
 import { BasicEnemy } from '../entities/BasicEnemy';
 import { BomberEnemy } from '../entities/BomberEnemy';
-import { BurningEnemy } from '../entities/BurningEnemy';
-import type { Enemy } from '../entities/Enemy';
+import { Enemy } from '../entities/Enemy';
 import { FatEnemy } from '../entities/FatEnemy';
 import { JumperEnemy } from '../entities/JumperEnemy';
 import { RaiderEnemy } from '../entities/RaiderEnemy';
@@ -79,7 +78,7 @@ export class WaveManager {
     if (kind === 'bomber') return new BomberEnemy(this.scene, x, y, groundY);
     if (kind === 'jumper') return new JumperEnemy(this.scene, x, y, groundY);
     if (kind === 'raider') return new RaiderEnemy(this.scene, x, y, groundY);
-    if (kind === 'burning') return new BurningEnemy(this.scene, x, y, groundY);
+    if (kind === 'trunk') return new Enemy(this.scene, x, y, 'trunk', groundY);
     if (kind === 'wizard' || kind === 'wizard_easy' || kind === 'wizard_medium' || kind === 'wizard_hard') {
       return new WizardEnemy(this.scene, x, y, kind, groundY);
     }
