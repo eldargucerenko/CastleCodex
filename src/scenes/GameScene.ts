@@ -16,6 +16,7 @@ import { TutorialSystem } from '../systems/TutorialSystem';
 import { ENEMY_STATS } from '../data/enemies';
 import { COLORS, FONTS, HEX, makeBar, makePanel } from '../ui/theme';
 import { PauseMenuScene } from './PauseMenuScene';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 export class GameScene extends Phaser.Scene {
   private save!: SaveData;
@@ -162,8 +163,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnTutorialKnight(): Enemy {
-    const width = Number(this.game.config.width);
-    const groundY = Number(this.game.config.height) - 72;
+    const width = LOGICAL_W;
+    const groundY = LOGICAL_H - 72;
     const stats = ENEMY_STATS.basic;
     const x = Math.round(width * 0.62);
     const y = groundY - stats.radius;
@@ -210,8 +211,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createWorld(): void {
-    const width = Number(this.game.config.width);
-    const height = Number(this.game.config.height);
+    const width = LOGICAL_W;
+    const height = LOGICAL_H;
     const groundHeight = 124;
     const horizonY = height - groundHeight;
 
@@ -298,7 +299,7 @@ export class GameScene extends Phaser.Scene {
     this.hpBar.container.setDepth(depth);
 
     // TOP-RIGHT cluster: gold panel * sound * pause, anchored from right edge.
-    const w = Number(this.game.config.width);
+    const w = LOGICAL_W;
     const rightPad = 12;
     const iconSize = 32;
     const gap = 8;
@@ -449,7 +450,7 @@ export class GameScene extends Phaser.Scene {
       this.save.logTrapCount = 0;
     }
     SaveSystem.save(this.save);
-    this.floatText(Number(this.game.config.width) / 2, 170, `Level clear +${reward}g`, '#14532d');
+    this.floatText(LOGICAL_W / 2, 170, `Level clear +${reward}g`, '#14532d');
     this.time.delayedCall(900, () => {
       this.cleanupSystems();
       this.scene.start('LevelCompleteScene', {

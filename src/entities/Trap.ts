@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 export class Trap {
   readonly zone: Phaser.Geom.Rectangle;
   private visual: Phaser.GameObjects.Rectangle;
 
   constructor(scene: Phaser.Scene, level: number) {
-    this.zone = new Phaser.Geom.Rectangle(124, Number(scene.game.config.height) - 116, 96 + level * 24, 42);
+    this.zone = new Phaser.Geom.Rectangle(124, LOGICAL_H - 116, 96 + level * 24, 42);
     this.visual = scene.add.rectangle(this.zone.centerX, this.zone.centerY, this.zone.width, this.zone.height, 0x64748b, 0.38);
     this.visual.setStrokeStyle(2, 0x0f172a, 0.8);
     for (let i = 0; i < 6 + level * 2; i += 1) {

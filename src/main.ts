@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import './style.css';
+import { LOGICAL_H, LOGICAL_W, RENDER_SCALE } from './config/dimensions';
 import { BootScene } from './scenes/BootScene';
 import { GameOverScene } from './scenes/GameOverScene';
 import { GameScene } from './scenes/GameScene';
@@ -9,33 +10,37 @@ import { UpgradeScene } from './scenes/UpgradeScene';
 import { VictoryScene } from './scenes/VictoryScene';
 import { wireAudioMuteOnHide } from './sdk/audio';
 
-// Render the canvas pixel buffer at devicePixelRatio so retina / high-DPI /
-// 4K monitors don't bilinear-upscale a 960x540 canvas into mush. Logical
-// world coords stay 960x540 and we keep them everywhere in the codebase --
-// only the canvas's internal pixel count changes (zoom multiplies it).
-// Cap at 3 to avoid pathological 8K canvases.
-const RENDER_DPR = Math.min(window.devicePixelRatio || 1, 3);
-
 // Phaser rasterizes Text to a hidden canvas at the requested fontSize; that
-// texture is then sampled when drawn. With the canvas now running at DPR x,
-// the glyph texture is the bottleneck -- it's still at 1x. Patch the factory
-// so every newly-created Text object oversamples its glyphs by RENDER_DPR
-// for crisp rendering on retina/4K screens.
+// texture is then sampled when drawn. Patch the factory so every newly-
+// created Text object oversamples its glyphs by RENDER_SCALE for crisp
+// rendering on every monitor regardless of devicePixelRatio.
 const TextFactory = Phaser.GameObjects.GameObjectFactory.prototype as unknown as {
   text: (...args: unknown[]) => Phaser.GameObjects.Text;
 };
 const originalTextFactory = TextFactory.text;
 TextFactory.text = function patchedText(this: Phaser.GameObjects.GameObjectFactory, ...args: unknown[]) {
   const text = originalTextFactory.apply(this, args);
-  text.setResolution(RENDER_DPR);
+  text.setResolution(RENDER_SCALE);
   return text;
+};
+
+// Hook every scene as it boots: scale the main camera so layout coordinates
+// authored against LOGICAL_W x LOGICAL_H render correctly on the bigger
+// canvas (RENDER_SCALE x larger). World (480, 270) still draws at canvas
+// center; we just have RENDER_SCALE^2 more pixels under each unit.
+const scaleScene = (scene: Phaser.Scene): void => {
+  scene.cameras.main.setZoom(RENDER_SCALE);
+  scene.cameras.main.centerOn(LOGICAL_W / 2, LOGICAL_H / 2);
 };
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
-  width: 960,
-  height: 540,
+  // Canvas runs at RENDER_SCALE x logical resolution so on a 1080p / 4K
+  // monitor the browser downscales (supersamples) instead of bilinear-
+  // upscaling our 960x540 design.
+  width: LOGICAL_W * RENDER_SCALE,
+  height: LOGICAL_H * RENDER_SCALE,
   backgroundColor: '#111827',
   physics: {
     default: 'arcade',
@@ -46,13 +51,22 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   scale: {
     mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    zoom: RENDER_DPR
+    autoCenter: Phaser.Scale.CENTER_BOTH
   },
   render: {
     antialias: true,
-    roundPixels: true,
+    roundPixels: false,
     pixelArt: false
+  },
+  callbacks: {
+    postBoot: (game) => {
+      game.events.on(Phaser.Core.Events.READY, () => {
+        for (const scene of game.scene.scenes) scaleScene(scene);
+      });
+      game.scene.scenes.forEach((scene) => {
+        scene.events.on(Phaser.Scenes.Events.CREATE, () => scaleScene(scene));
+      });
+    }
   },
   scene: [
     BootScene,

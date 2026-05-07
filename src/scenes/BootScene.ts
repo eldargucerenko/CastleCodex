@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { awaitPlayerReady, cloudLoad, cloudSave, gameLoadingReady, initGamePush, trackLevelStart } from '../sdk/gamepush';
 import { SaveSystem } from '../systems/SaveSystem';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -26,8 +27,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   async create(): Promise<void> {
-    const width = Number(this.game.config.width);
-    const height = Number(this.game.config.height);
+    const width = LOGICAL_W;
+    const height = LOGICAL_H;
     this.add.rectangle(width / 2, height / 2, width, height, 0x111827);
     this.add.text(width / 2, height / 2, 'Loading...', {
       color: '#f9fafb',

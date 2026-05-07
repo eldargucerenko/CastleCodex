@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { getSdkMuted, setSdkMuted } from '../sdk/gamepush';
 import { SaveSystem } from '../systems/SaveSystem';
 import { COLORS, FONTS, HEX, makeButton, makePanel } from '../ui/theme';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 const MUTED_KEY = 'castle-codex-muted';
 
@@ -27,8 +28,8 @@ export class PauseMenuScene extends Phaser.Scene {
   }
 
   create(): void {
-    const w = Number(this.game.config.width);
-    const h = Number(this.game.config.height);
+    const w = LOGICAL_W;
+    const h = LOGICAL_H;
 
     this.add.rectangle(w / 2, h / 2, w, h, COLORS.nightBg, 0.78);
 

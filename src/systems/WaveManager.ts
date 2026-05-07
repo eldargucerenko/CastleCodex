@@ -10,6 +10,7 @@ import { JumperEnemy } from '../entities/JumperEnemy';
 import { RaiderEnemy } from '../entities/RaiderEnemy';
 import { WizardEnemy } from '../entities/WizardEnemy';
 import type { EnemyKind } from '../types/game';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 export class WaveManager {
   private static readonly laneCount = 5;
@@ -42,7 +43,7 @@ export class WaveManager {
     if (this.queue.length === 0 || time < this.nextSpawnAt) return;
     const kind = this.queue.shift();
     if (!kind) return;
-    const width = Number(this.scene.game.config.width);
+    const width = LOGICAL_W;
     const groundY = this.pickLaneGroundY();
     const x = width + Phaser.Math.Between(20, 120);
     const y = groundY - ENEMY_STATS[kind].radius;
@@ -65,7 +66,7 @@ export class WaveManager {
   }
 
   spawnFromEdge(kind: EnemyKind): Enemy {
-    const width = Number(this.scene.game.config.width);
+    const width = LOGICAL_W;
     const groundY = this.pickLaneGroundY();
     const x = width + Phaser.Math.Between(20, 120);
     const y = groundY - ENEMY_STATS[kind].radius;
@@ -86,7 +87,7 @@ export class WaveManager {
   }
 
   private pickLaneGroundY(): number {
-    const centerGroundY = Number(this.scene.game.config.height) - 72;
+    const centerGroundY = LOGICAL_H - 72;
     const lane = Phaser.Math.Between(0, WaveManager.laneCount - 1);
     const offsetFromCenter = lane - Math.floor(WaveManager.laneCount / 2);
     return centerGroundY + offsetFromCenter * WaveManager.laneSpacing;

@@ -4,6 +4,7 @@ import { SaveSystem } from '../systems/SaveSystem';
 import { computeReplaySave } from '../systems/replay';
 import type { SaveData } from '../types/game';
 import { COLORS, FONTS, HEX, drawStar, makeButton, makePanel } from '../ui/theme';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 interface LevelCompleteData {
   levelCompleted: number;
@@ -37,8 +38,8 @@ export class LevelCompleteScene extends Phaser.Scene {
   }
 
   create(): void {
-    const w = Number(this.game.config.width);
-    const h = Number(this.game.config.height);
+    const w = LOGICAL_W;
+    const h = LOGICAL_H;
 
     this.drawBackdrop(w, h);
     this.drawSparks(w, h);

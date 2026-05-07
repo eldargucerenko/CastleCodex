@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { CastleProgress } from '../types/game';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 export interface PlayerDefenderTarget {
   kind: 'archer' | 'mage';
@@ -43,7 +44,7 @@ export class Castle {
   };
 
   constructor(private scene: Phaser.Scene, progress: CastleProgress) {
-    this.bottom = Number(scene.game.config.height) - 56;
+    this.bottom = LOGICAL_H - 56;
     this.currentHp = progress.currentHp;
     this.maxHp = progress.maxHp;
     this.baseDamageReduction = progress.baseDamageReduction;

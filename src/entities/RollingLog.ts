@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ENEMY_STATS } from '../data/enemies';
 import type { Enemy } from './Enemy';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 export class RollingLog {
   private body: Phaser.GameObjects.Rectangle;
@@ -43,7 +44,7 @@ export class RollingLog {
       this.spawnHit(enemy.x, enemy.y);
     }
 
-    if (this.body.x > Number(this.scene.game.config.width) + 90) {
+    if (this.body.x > LOGICAL_W + 90) {
       this.destroy();
     }
   }
@@ -56,7 +57,7 @@ export class RollingLog {
     this.label.destroy();
     this.body.setAngle(0);
     this.body.x = 128;
-    this.body.y = Number(this.scene.game.config.height) - 92;
+    this.body.y = LOGICAL_H - 92;
     this.scene.tweens.add({
       targets: this.body,
       scaleX: 1.12,

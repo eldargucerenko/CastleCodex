@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SaveSystem } from '../systems/SaveSystem';
 import { COLORS, FONTS, HEX, drawStar, makeButton, makePanel } from '../ui/theme';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 export class VictoryScene extends Phaser.Scene {
   constructor() {
@@ -8,8 +9,8 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   create(): void {
-    const w = Number(this.game.config.width);
-    const h = Number(this.game.config.height);
+    const w = LOGICAL_W;
+    const h = LOGICAL_H;
 
     const bg = this.add.graphics();
     bg.fillGradientStyle(COLORS.azure500, COLORS.azure500, COLORS.nightBg, COLORS.nightBg, 1, 1, 1, 1);

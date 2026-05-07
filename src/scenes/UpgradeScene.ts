@@ -4,6 +4,7 @@ import { SaveSystem } from '../systems/SaveSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import type { SaveData, UpgradeKey } from '../types/game';
 import { COLORS, FONTS, HEX, makeButton, makePanel } from '../ui/theme';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 interface UpgradeSpec {
   key: UpgradeKey;
@@ -33,8 +34,8 @@ export class UpgradeScene extends Phaser.Scene {
   private draw(): void {
     this.children.removeAll();
 
-    const w = Number(this.game.config.width);
-    const h = Number(this.game.config.height);
+    const w = LOGICAL_W;
+    const h = LOGICAL_H;
 
     // Backdrop: warm parchment gradient.
     const bg = this.add.graphics();

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { Castle } from '../entities/Castle';
 import type { Enemy } from '../entities/Enemy';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 type Step = 'castle' | 'enemy' | 'drag' | 'release' | 'done';
 
@@ -26,8 +27,8 @@ export class TutorialSystem {
     private spawnTutorialEnemy: () => Enemy,
     private onComplete: () => void
   ) {
-    const width = Number(scene.game.config.width);
-    const height = Number(scene.game.config.height);
+    const width = LOGICAL_W;
+    const height = LOGICAL_H;
     this.liftThresholdY = height * 0.45;
 
     this.maskShape = scene.add.graphics();
@@ -177,7 +178,7 @@ export class TutorialSystem {
   }
 
   private createBanner(): Phaser.GameObjects.Container {
-    const width = Number(this.scene.game.config.width);
+    const width = LOGICAL_W;
     const c = this.scene.add.container(width / 2, 56);
     const bg = this.scene.add
       .rectangle(0, 0, 540, 60, 0x111827, 0.85)

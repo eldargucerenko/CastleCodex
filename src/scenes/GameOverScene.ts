@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { trackLevelReplay } from '../sdk/gamepush';
 import { SaveSystem } from '../systems/SaveSystem';
 import { COLORS, FONTS, HEX, makeButton, makePanel } from '../ui/theme';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 export class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -9,8 +10,8 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(): void {
-    const w = Number(this.game.config.width);
-    const h = Number(this.game.config.height);
+    const w = LOGICAL_W;
+    const h = LOGICAL_H;
     const lostLevel = SaveSystem.load().currentLevel;
 
     const bg = this.add.graphics();

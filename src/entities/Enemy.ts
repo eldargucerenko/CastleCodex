@@ -3,6 +3,7 @@ import { ENEMY_STATS } from '../data/enemies';
 import { DebugCheatSystem } from '../systems/DebugCheatSystem';
 import type { EnemyKind, EnemyState, EnemyStats, WizardState } from '../types/game';
 import type { Castle } from './Castle';
+import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 // Chibi sprite key for each enemy kind (loaded by BootScene). Wizard variants
 // share the base wizard art. fat is the "tosses other knights" enemy and
@@ -46,7 +47,7 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.kind = kind;
     this.stats = DebugCheatSystem.applyTo(ENEMY_STATS[kind]);
     this.hp = this.stats.hp;
-    this.groundY = groundY ?? Number(scene.game.config.height) - 72;
+    this.groundY = groundY ?? LOGICAL_H - 72;
 
     this.shape = scene.add.graphics();
     this.labelText = scene.add.text(0, 0, this.stats.label, { color: '#ffffff', fontSize: '12px', fontStyle: 'bold' }).setOrigin(0.5);
@@ -211,7 +212,7 @@ export class Enemy extends Phaser.GameObjects.Container {
       }
     }
 
-    const rightWallX = Number(this.scene.game.config.width) - this.stats.radius - 4;
+    const rightWallX = LOGICAL_W - this.stats.radius - 4;
     if (this.x > rightWallX) {
       this.x = rightWallX;
       this.vx = -Math.abs(this.vx) * 0.42;
@@ -241,7 +242,7 @@ export class Enemy extends Phaser.GameObjects.Container {
       }
     }
 
-    if (this.y > Number(this.scene.game.config.height) + 180) {
+    if (this.y > LOGICAL_H + 180) {
       this.die();
     }
   }
