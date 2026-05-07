@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { showRewardedAd } from '../sdk/gamepush';
 import { SaveSystem } from '../systems/SaveSystem';
+import { computeReplaySave } from '../systems/replay';
+import type { SaveData } from '../types/game';
 import { COLORS, FONTS, HEX, drawStar, makeButton, makePanel } from '../ui/theme';
 
 interface LevelCompleteData {
@@ -10,6 +12,7 @@ interface LevelCompleteData {
   hasNextLevel: boolean;
   hpRemaining?: number;
   hpMax?: number;
+  saveBeforeLevel?: SaveData;
 }
 
 const AD_BONUS_MULTIPLIER = 1; // +100% on top of base reward when ad is watched
@@ -320,10 +323,11 @@ export class LevelCompleteScene extends Phaser.Scene {
   }
 
   private replay(): void {
-    const save = SaveSystem.load();
-    // Roll back to the level we just finished so the player retries it.
-    save.currentLevel = this.payload.levelCompleted;
-    SaveSystem.save(save);
+    const current = SaveSystem.load();
+    const restored = this.payload.saveBeforeLevel
+      ? computeReplaySave(this.payload.saveBeforeLevel, current)
+      : { ...current, currentLevel: this.payload.levelCompleted };
+    SaveSystem.save(restored);
     this.scene.start('GameScene');
   }
 

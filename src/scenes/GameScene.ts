@@ -35,6 +35,7 @@ export class GameScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
   private enemiesText!: Phaser.GameObjects.Text;
   private hpBar?: ReturnType<typeof makeBar>;
+  private saveAtLevelStart?: SaveData;
   private hasTemporaryLevelOneArcher = false;
   private hasTemporaryLevelOneMage = false;
   private hasTemporaryLevelOneLog = false;
@@ -48,6 +49,8 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.save = SaveSystem.load();
+    // Snapshot the pre-level save so Replay can restore gold and defender HP.
+    this.saveAtLevelStart = JSON.parse(JSON.stringify(this.save)) as SaveData;
     this.enemies = [];
     this.killed = 0;
     this.finishing = false;
@@ -422,7 +425,8 @@ export class GameScene extends Phaser.Scene {
         elapsedMs,
         hasNextLevel: this.save.currentLevel <= 10,
         hpRemaining: this.save.currentHp,
-        hpMax: this.save.maxHp
+        hpMax: this.save.maxHp,
+        saveBeforeLevel: this.saveAtLevelStart
       });
     });
   }

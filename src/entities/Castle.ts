@@ -27,8 +27,6 @@ export class Castle {
   archerHp: number[];
   mageHp?: number;
   private body: Phaser.GameObjects.Rectangle;
-  private hpBar: Phaser.GameObjects.Rectangle;
-  private hpBack: Phaser.GameObjects.Rectangle;
   private playerArchers: Array<
     PlayerDefenderTarget & {
       body: Phaser.GameObjects.Arc;
@@ -62,26 +60,20 @@ export class Castle {
     this.body.setStrokeStyle(4, 0x4b2f1a);
     scene.add.rectangle(58, this.top - 24, 78, 44, 0x9a6a45).setStrokeStyle(3, 0x4b2f1a);
     scene.add.rectangle(58, this.top - 62, 48, 42, 0x7a5234).setStrokeStyle(3, 0x4b2f1a);
-    scene.add.text(19, this.top + 24, 'CASTLE', { color: '#fff7ed', fontSize: '16px', fontStyle: 'bold' }).setAngle(-90);
 
-    this.hpBack = scene.add.rectangle(14, 28, 250, 14, 0x1f2937).setOrigin(0, 0.5);
-    this.hpBar = scene.add.rectangle(14, 28, 250, 14, 0x22c55e).setOrigin(0, 0.5);
     this.createPlayerArchers();
     this.createPlayerMage();
-    this.refreshHpBar();
   }
 
   takeDamage(rawDamage: number): number {
     const damage = Math.max(1, Math.round(rawDamage * (1 - this.baseDamageReduction)));
     this.currentHp = Math.max(0, this.currentHp - damage);
     this.scene.cameras.main.shake(90, 0.0025);
-    this.refreshHpBar();
     return damage;
   }
 
   healFull(): void {
     this.currentHp = this.maxHp;
-    this.refreshHpBar();
   }
 
   getLivingArcherTarget(): PlayerArcherTarget | undefined {
@@ -134,13 +126,6 @@ export class Castle {
       archerHp: this.playerArchers.map((archer) => archer.hp),
       mageHp: this.playerMage?.hp
     };
-  }
-
-  private refreshHpBar(): void {
-    const ratio = Phaser.Math.Clamp(this.currentHp / this.maxHp, 0, 1);
-    this.hpBar.width = 250 * ratio;
-    this.hpBar.fillColor = ratio > 0.45 ? 0x22c55e : ratio > 0.2 ? 0xf59e0b : 0xef4444;
-    this.hpBack.setVisible(true);
   }
 
   private createPlayerArchers(): void {
