@@ -3,6 +3,8 @@ import './style.css';
 import { BootScene } from './scenes/BootScene';
 import { GameOverScene } from './scenes/GameOverScene';
 import { GameScene } from './scenes/GameScene';
+import { LevelCompleteScene } from './scenes/LevelCompleteScene';
+import { PauseMenuScene } from './scenes/PauseMenuScene';
 import { UpgradeScene } from './scenes/UpgradeScene';
 import { VictoryScene } from './scenes/VictoryScene';
 
@@ -23,7 +25,15 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
-  scene: [BootScene, GameScene, UpgradeScene, GameOverScene, VictoryScene]
+  scene: [
+    BootScene,
+    GameScene,
+    UpgradeScene,
+    GameOverScene,
+    VictoryScene,
+    LevelCompleteScene,
+    PauseMenuScene
+  ]
 };
 
 new Phaser.Game(config);

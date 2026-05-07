@@ -17,6 +17,11 @@ export class UpgradeScene extends Phaser.Scene {
   create(): void {
     this.save = SaveSystem.load();
     this.draw();
+    this.input.keyboard?.on('keydown-ESC', () => {
+      if (this.scene.isPaused() || this.scene.isActive('PauseMenuScene')) return;
+      this.scene.launch('PauseMenuScene', { fromScene: 'UpgradeScene' });
+      this.scene.pause();
+    });
   }
 
   private draw(): void {

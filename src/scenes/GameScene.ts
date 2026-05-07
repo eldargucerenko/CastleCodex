@@ -35,6 +35,7 @@ export class GameScene extends Phaser.Scene {
   private hasTemporaryLevelOneArcher = false;
   private hasTemporaryLevelOneMage = false;
   private hasTemporaryLevelOneLog = false;
+  private levelStartedAt = 0;
   private unsubscribePause?: () => void;
   private onVisibilityChange?: () => void;
 
@@ -71,11 +72,29 @@ export class GameScene extends Phaser.Scene {
     }
     this.createUi();
     this.maybeStartTutorial();
+    this.levelStartedAt = Date.now();
     DebugPanelUI.ensureMounted({
       spawnHandler: (kind) => this.spawnDebugEnemy(kind),
       getSpawnEnabled: () => this.scene.isActive() && !this.finishing
     });
     this.wireSdkLifecycle();
+    this.wirePauseMenu();
+  }
+
+  private wirePauseMenu(): void {
+    this.input.keyboard?.on('keydown-ESC', () => this.openPauseMenu());
+    this.events.on(Phaser.Scenes.Events.RESUME, () => {
+      if (!this.finishing) gameplayStart();
+    });
+  }
+
+  private openPauseMenu(): void {
+    if (this.finishing) return;
+    if (this.scene.isPaused()) return;
+    if (this.scene.isActive('PauseMenuScene')) return;
+    gameplayStop();
+    this.scene.launch('PauseMenuScene', { fromScene: 'GameScene' });
+    this.scene.pause();
   }
 
   private wireSdkLifecycle(): void {
@@ -232,6 +251,8 @@ export class GameScene extends Phaser.Scene {
   private completeLevel(): void {
     this.finishing = true;
     const reward = EconomySystem.levelCompleteReward(this.save.currentLevel);
+    const levelCompleted = this.save.currentLevel;
+    const elapsedMs = Date.now() - this.levelStartedAt;
     this.save.gold += reward;
     this.save.completedLevels = Math.max(this.save.completedLevels, this.save.currentLevel);
     this.save.currentLevel += 1;
@@ -251,7 +272,12 @@ export class GameScene extends Phaser.Scene {
     this.floatText(Number(this.game.config.width) / 2, 170, `Level clear +${reward}g`, '#14532d');
     this.time.delayedCall(900, () => {
       this.cleanupSystems();
-      this.scene.start(this.save.currentLevel > 10 ? 'VictoryScene' : 'UpgradeScene');
+      this.scene.start('LevelCompleteScene', {
+        levelCompleted,
+        baseReward: reward,
+        elapsedMs,
+        hasNextLevel: this.save.currentLevel <= 10
+      });
     });
   }
 

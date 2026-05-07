@@ -130,6 +130,19 @@ export function gameplayStop(): void {
   gp?.gameplayStop?.();
 }
 
+// Show a rewarded video and resolve to true only if the SDK reports the user
+// finished it (so we can grant the bonus). No-op false when the SDK isn't
+// available so the UI can degrade gracefully.
+export async function showRewardedAd(): Promise<boolean> {
+  if (!gp?.ads?.showRewardedVideo) return false;
+  try {
+    const result = await gp.ads.showRewardedVideo();
+    return Boolean(result);
+  } catch {
+    return false;
+  }
+}
+
 // Cloud save: stores the JSON blob in a single GamePush player field named
 // 'save'. Requires a corresponding string field configured in the GP dashboard.
 // Fire-and-forget — localStorage already holds the truth.
