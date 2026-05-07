@@ -15,6 +15,7 @@ import { RollingLog } from '../entities/RollingLog';
 import { TutorialSystem } from '../systems/TutorialSystem';
 import { ENEMY_STATS } from '../data/enemies';
 import { COLORS, FONTS, HEX, makeBar, makePanel } from '../ui/theme';
+import { PauseMenuScene } from './PauseMenuScene';
 
 export class GameScene extends Phaser.Scene {
   private save!: SaveData;
@@ -209,9 +210,54 @@ export class GameScene extends Phaser.Scene {
     const width = Number(this.game.config.width);
     const height = Number(this.game.config.height);
     const groundHeight = 124;
-    this.add.rectangle(width / 2, height / 2, width, height, COLORS.skyTop);
-    this.add.rectangle(width / 2, height - groundHeight / 2, width, groundHeight, COLORS.groundTop);
-    this.add.rectangle(width / 2, height - groundHeight - 2, width, 4, COLORS.groundBot);
+    const horizonY = height - groundHeight;
+
+    // Sky: cool blue at top fading to warm sand near the horizon.
+    const sky = this.add.graphics();
+    sky.fillGradientStyle(COLORS.skyTop, COLORS.skyTop, COLORS.skyMid, COLORS.skyMid, 1, 1, 1, 1);
+    sky.fillRect(0, 0, width, horizonY);
+
+    // Sun, top-right area.
+    this.add
+      .circle(width - 200, 92, 32, COLORS.gold400)
+      .setAlpha(0.9);
+    this.add
+      .circle(width - 200, 92, 44, COLORS.gold400, 0.18);
+
+    // Drifting clouds — soft pill shapes.
+    this.makeCloud(160, 90, 80, 16);
+    this.makeCloud(140, 102, 120, 14);
+    this.makeCloud(580, 130, 90, 14);
+
+    // Distant hills as a polygon silhouette in front of the sky.
+    const hills = this.add.graphics();
+    hills.fillStyle(0x7a9a78, 1);
+    hills.beginPath();
+    hills.moveTo(0, horizonY);
+    hills.lineTo(0, horizonY - 36);
+    hills.lineTo(width * 0.15, horizonY - 70);
+    hills.lineTo(width * 0.3, horizonY - 40);
+    hills.lineTo(width * 0.45, horizonY - 78);
+    hills.lineTo(width * 0.6, horizonY - 44);
+    hills.lineTo(width * 0.8, horizonY - 82);
+    hills.lineTo(width, horizonY - 50);
+    hills.lineTo(width, horizonY);
+    hills.closePath();
+    hills.fillPath();
+
+    // Ground band — top stripe is a touch lighter for soft horizon banding.
+    this.add.rectangle(width / 2, horizonY + groundHeight / 2, width, groundHeight, COLORS.groundTop);
+    this.add.rectangle(width / 2, horizonY - 1, width, 3, COLORS.groundBot);
+    this.add.rectangle(width / 2, horizonY + groundHeight - 4, width, 6, COLORS.groundBot, 0.6);
+  }
+
+  private makeCloud(x: number, y: number, w: number, h: number): void {
+    const cloud = this.add.rectangle(x, y, w, h, 0xfdf6e3, 0.85);
+    cloud.setOrigin(0.5);
+    // Two end-caps to fake a rounded pill shape with rectangles only.
+    this.add.circle(x - w / 2, y, h / 2, 0xfdf6e3, 0.85);
+    this.add.circle(x + w / 2, y, h / 2, 0xfdf6e3, 0.85);
+    void cloud;
   }
 
   private createUi(): void {
@@ -248,31 +294,76 @@ export class GameScene extends Phaser.Scene {
     this.hpBar.setProgress(1);
     this.hpBar.container.setDepth(depth);
 
-    // TOP-RIGHT: gold panel + pause icon
+    // TOP-RIGHT cluster: gold panel · sound · pause, anchored from right edge.
     const w = Number(this.game.config.width);
-    makePanel(this, w - 120, 28, 160, 36).setDepth(depth);
+    const rightPad = 12;
+    const iconSize = 32;
+    const gap = 8;
+
+    const pauseCenterX = w - rightPad - iconSize / 2;
+    const soundCenterX = pauseCenterX - iconSize - gap;
+
+    // Gold panel sits left of the icon cluster.
+    const goldPanelW = 130;
+    const goldPanelRight = soundCenterX - iconSize / 2 - gap;
+    const goldPanelCenterX = goldPanelRight - goldPanelW / 2;
+    makePanel(this, goldPanelCenterX, 28, goldPanelW, iconSize).setDepth(depth);
     this.add
-      .text(w - 178, 28, '🪙', { fontFamily: FONTS.display, fontSize: '20px', color: HEX.gold500 })
+      .text(goldPanelCenterX - goldPanelW / 2 + 14, 28, '🪙', {
+        fontFamily: FONTS.display,
+        fontSize: '18px',
+        color: HEX.gold500
+      })
       .setOrigin(0, 0.5)
       .setDepth(depth);
     this.goldText = this.add
-      .text(w - 60, 28, '', { fontFamily: FONTS.display, fontSize: '20px', color: HEX.ink900 })
+      .text(goldPanelCenterX + goldPanelW / 2 - 12, 28, '', {
+        fontFamily: FONTS.display,
+        fontSize: '20px',
+        color: HEX.ink900
+      })
       .setOrigin(1, 0.5)
       .setDepth(depth);
 
-    // Pause icon (touch-friendly)
-    const pauseBg = this.add
-      .rectangle(w - 28, 28, 32, 32, COLORS.parchment200)
-      .setStrokeStyle(3, COLORS.ink700)
-      .setDepth(depth);
-    pauseBg.setInteractive({ useHandCursor: true });
-    this.add
-      .text(w - 28, 28, '❚❚', { fontFamily: FONTS.display, fontSize: '14px', color: HEX.ink700 })
-      .setOrigin(0.5)
-      .setDepth(depth);
-    pauseBg.on('pointerdown', () => this.openPauseMenu());
+    const soundButton = this.makeIconButton(soundCenterX, 28, iconSize, this.soundGlyph(), () => {
+      const next = !PauseMenuScene.loadMuted();
+      PauseMenuScene.saveMuted(next);
+      const label = soundButton.getAt(1) as Phaser.GameObjects.Text;
+      label.setText(next ? '✕' : '♪');
+    });
+    soundButton.setDepth(depth);
+
+    this.makeIconButton(pauseCenterX, 28, iconSize, '❚❚', () => this.openPauseMenu()).setDepth(
+      depth
+    );
 
     this.refreshUi();
+  }
+
+  private soundGlyph(): string {
+    return PauseMenuScene.loadMuted() ? '✕' : '♪';
+  }
+
+  private makeIconButton(
+    x: number,
+    y: number,
+    size: number,
+    glyph: string,
+    onClick: () => void
+  ): Phaser.GameObjects.Container {
+    const c = this.add.container(x, y);
+    const bg = this.add
+      .rectangle(0, 0, size, size, COLORS.parchment200)
+      .setStrokeStyle(3, COLORS.ink700);
+    const label = this.add
+      .text(0, 0, glyph, { fontFamily: FONTS.display, fontSize: '16px', color: HEX.ink700 })
+      .setOrigin(0.5);
+    c.add([bg, label]);
+    bg.setInteractive({ useHandCursor: true });
+    bg.on('pointerover', () => bg.setFillStyle(COLORS.parchment100));
+    bg.on('pointerout', () => bg.setFillStyle(COLORS.parchment200));
+    bg.on('pointerdown', onClick);
+    return c;
   }
 
   private refreshUi(): void {

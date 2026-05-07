@@ -5,9 +5,14 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
-  background: #111827;
+  background: #2a1810;
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Inter, system-ui, sans-serif;
+  /* Parchment vignette behind the canvas so the letterbox bars on wide
+     monitors feel intentional instead of "game running in a black void". */
+  background:
+    radial-gradient(ellipse at center, #4a2c18 0%, #2a1810 70%),
+    #2a1810;
 }

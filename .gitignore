@@ -3,3 +3,6 @@ dist/
 *.log
 localtunnel.*
 .claude/
+.playwright-mcp/
+*.png
+!public/**/*.png
