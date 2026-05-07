@@ -5,9 +5,9 @@ import type { BurningState, EnemyKind, EnemyState, EnemyStats, WizardState } fro
 import type { Castle } from './Castle';
 
 // Chibi sprite key for each enemy kind (loaded by BootScene). Wizard variants
-// share the base wizard art. `basic` is omitted because BasicEnemy uses an
-// animated sprite sheet (Knight1) that we don't want to displace.
+// share the base wizard art.
 const SPRITE_BY_KIND: Partial<Record<EnemyKind, string>> = {
+  basic: 'enemy-knight',
   archer: 'enemy-archer',
   bomber: 'enemy-bomber',
   jumper: 'enemy-jumper',

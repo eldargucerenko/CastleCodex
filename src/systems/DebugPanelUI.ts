@@ -31,7 +31,7 @@ function getAssetBasePath(): string {
 // animated knight frame; the other kinds reuse the chibi PNGs we ship for
 // the in-game sprites so the cheat panel matches what gets spawned.
 const CHIBI_SPRITE_BY_KIND: Partial<Record<EnemyKind, string>> = {
-  basic: 'Knight1/KnightRun1.png',
+  basic: 'enemies/knight.png',
   archer: 'enemies/archer.png',
   bomber: 'enemies/bomber.png',
   jumper: 'enemies/hammerman.png',

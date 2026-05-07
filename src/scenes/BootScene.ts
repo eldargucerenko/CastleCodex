@@ -9,20 +9,16 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     const assetBasePath = this.getAssetBasePath();
-    this.load.spritesheet('basic-knight-walk-sheet', `${assetBasePath}assets/Knight1/KnightWalkSheet.png?v=20260503-run`, {
-      frameWidth: 474,
-      frameHeight: 723
-    });
     // Chibi character sheet, sliced into per-enemy PNGs.
     const chibi: Array<[string, string]> = [
+      ['enemy-knight', 'knight'],
       ['enemy-archer', 'archer'],
       ['enemy-bomber', 'bomber'],
       ['enemy-jumper', 'hammerman'],
       ['enemy-raider', 'raider'],
       ['enemy-fat', 'log_thrower'],
       ['enemy-wizard', 'wizard'],
-      ['enemy-burning', 'heavy_knight'],
-      ['enemy-knight', 'knight']
+      ['enemy-burning', 'heavy_knight']
     ];
     for (const [key, name] of chibi) {
       this.load.image(key, `${assetBasePath}assets/enemies/${name}.png`);
@@ -30,15 +26,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   async create(): Promise<void> {
-    if (this.textures.exists('basic-knight-walk-sheet') && !this.anims.exists('basic-walk')) {
-      this.anims.create({
-        key: 'basic-walk',
-        frames: this.anims.generateFrameNumbers('basic-knight-walk-sheet', { start: 0, end: 35 }),
-        frameRate: 18,
-        repeat: -1
-      });
-    }
-
     const width = Number(this.game.config.width);
     const height = Number(this.game.config.height);
     this.add.rectangle(width / 2, height / 2, width, height, 0x111827);
