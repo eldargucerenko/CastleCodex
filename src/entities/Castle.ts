@@ -69,7 +69,7 @@ export class Castle {
   takeDamage(rawDamage: number): number {
     const damage = Math.max(1, Math.round(rawDamage * (1 - this.baseDamageReduction)));
     this.currentHp = Math.max(0, this.currentHp - damage);
-    this.scene.cameras.main.shake(90, 0.0025);
+    this.scene.cameras.main.shake(60, 0.0012);
     return damage;
   }
 

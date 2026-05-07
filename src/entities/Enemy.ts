@@ -207,7 +207,7 @@ export class Enemy extends Phaser.GameObjects.Container {
       this.x = castleWallX;
       this.vx = Math.abs(this.vx) * 0.42;
       if (Math.abs(this.vx) + Math.abs(this.vy) > 520) {
-        this.scene.cameras.main.shake(110, 0.003);
+        this.scene.cameras.main.shake(80, 0.0014);
         this.spawnImpact();
       }
     }
@@ -217,7 +217,7 @@ export class Enemy extends Phaser.GameObjects.Container {
       this.x = rightWallX;
       this.vx = -Math.abs(this.vx) * 0.42;
       if (Math.abs(this.vx) + Math.abs(this.vy) > 520) {
-        this.scene.cameras.main.shake(90, 0.0025);
+        this.scene.cameras.main.shake(60, 0.0012);
         this.spawnImpact();
       }
     }
@@ -229,7 +229,7 @@ export class Enemy extends Phaser.GameObjects.Container {
       if (impactSpeed > impactThreshold) {
         const damage = Math.round((impactSpeed - impactThreshold) * this.stats.collisionDamageFactor);
         this.takeDamage(damage);
-        this.scene.cameras.main.shake(Math.min(220, impactSpeed / 4), Math.min(0.008, impactSpeed / 100000));
+        this.scene.cameras.main.shake(Math.min(160, impactSpeed / 6), Math.min(0.0035, impactSpeed / 200000));
         this.spawnImpact();
       }
       this.vy *= -0.34;

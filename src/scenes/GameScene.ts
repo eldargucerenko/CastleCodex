@@ -279,8 +279,19 @@ export class GameScene extends Phaser.Scene {
       .text(82, 28, '', { fontFamily: FONTS.display, fontSize: '22px', color: HEX.ink900 })
       .setOrigin(0, 0.5)
       .setDepth(depth);
+    // Tiny enemy silhouette (head + two eye dots) at the right edge of the
+    // panel, with the count to its left so the wave label has room to breathe.
+    const foeIcon = this.add.graphics();
+    foeIcon.setDepth(depth);
+    const foeIconX = 252;
+    const foeIconY = 28;
+    foeIcon.fillStyle(COLORS.ink700, 1);
+    foeIcon.fillCircle(foeIconX, foeIconY, 8);
+    foeIcon.fillStyle(0xffffff, 1);
+    foeIcon.fillCircle(foeIconX - 3, foeIconY - 1, 1.6);
+    foeIcon.fillCircle(foeIconX + 3, foeIconY - 1, 1.6);
     this.enemiesText = this.add
-      .text(265, 28, '', { fontFamily: FONTS.display, fontSize: '14px', color: HEX.ink700 })
+      .text(foeIconX - 12, 28, '', { fontFamily: FONTS.display, fontSize: '16px', color: HEX.ink900 })
       .setOrigin(1, 0.5)
       .setDepth(depth);
 
@@ -408,7 +419,7 @@ export class GameScene extends Phaser.Scene {
     this.levelText.setText(`${this.save.currentLevel} / 10`);
     this.hpText.setText(`${this.castle.currentHp}/${this.castle.maxHp}`);
     this.goldText.setText(`${this.save.gold}`);
-    this.enemiesText.setText(`Enemies: ${enemiesLeft}`);
+    this.enemiesText.setText(`${enemiesLeft}`);
     if (this.castle.maxHp > 0) {
       this.hpBar?.setProgress(this.castle.currentHp / this.castle.maxHp);
     }
