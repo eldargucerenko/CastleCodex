@@ -16,6 +16,21 @@ import { wireAudioMuteOnHide } from './sdk/audio';
 // Cap at 3 to avoid pathological 8K canvases.
 const RENDER_DPR = Math.min(window.devicePixelRatio || 1, 3);
 
+// Phaser rasterizes Text to a hidden canvas at the requested fontSize; that
+// texture is then sampled when drawn. With the canvas now running at DPR x,
+// the glyph texture is the bottleneck -- it's still at 1x. Patch the factory
+// so every newly-created Text object oversamples its glyphs by RENDER_DPR
+// for crisp rendering on retina/4K screens.
+const TextFactory = Phaser.GameObjects.GameObjectFactory.prototype as unknown as {
+  text: (...args: unknown[]) => Phaser.GameObjects.Text;
+};
+const originalTextFactory = TextFactory.text;
+TextFactory.text = function patchedText(this: Phaser.GameObjects.GameObjectFactory, ...args: unknown[]) {
+  const text = originalTextFactory.apply(this, args);
+  text.setResolution(RENDER_DPR);
+  return text;
+};
+
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
@@ -50,7 +65,16 @@ const config: Phaser.Types.Core.GameConfig = {
   ]
 };
 
-new Phaser.Game(config);
+// Defer Phaser boot until web fonts (Jersey 15, Inter) finish loading. With
+// the Google Fonts `display=swap` directive, the first text rasterization
+// otherwise bakes glyphs in the system fallback font; Phaser caches the
+// resulting texture and never re-renders, leaving the game in fallback fonts
+// forever. Falls back to a 1.5s cap so a blocked font CDN doesn't hang boot.
+const fontsReady = document.fonts?.ready ?? Promise.resolve();
+const fontDeadline = new Promise((resolve) => setTimeout(resolve, 1500));
+Promise.race([fontsReady, fontDeadline]).then(() => {
+  new Phaser.Game(config);
+});
 
 // Yandex Games compliance (1.6.2.7): suppress the browser context menu so
 // players can't right-click and see "Save image as..." over game art.
