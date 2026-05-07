@@ -6,6 +6,22 @@ body,
   margin: 0;
   overflow: hidden;
   background: #2a1810;
+  /* Yandex Games compliance (1.6.1.8, 1.6.2.7, 1.10.2): block selection,
+     iOS long-press callout, browser swipe-to-refresh, and overscroll. */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+html,
+body {
+  position: fixed;
+  inset: 0;
 }
 
 body {

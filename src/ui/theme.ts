@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-// Dusk palette — locked in by the design handoff. Storybook parchment with
+// Dusk palette - locked in by the design handoff. Storybook parchment with
 // cool-blue accents for magic/ad and gold for currency/primary actions.
 export const COLORS = {
   parchment100: 0xfbf2dc,

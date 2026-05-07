@@ -6,3 +6,4 @@ localtunnel.*
 .playwright-mcp/
 *.png
 !public/**/*.png
+game-*.zip

@@ -158,7 +158,7 @@ export class LevelCompleteScene extends Phaser.Scene {
       if (pct > 0.4) return 2;
       return 1;
     }
-    return 3; // no HP info — assume full clear
+    return 3; // no HP info - assume full clear
   }
 
   private drawStatTiles(cx: number, y: number, panelW: number): void {
@@ -171,7 +171,7 @@ export class LevelCompleteScene extends Phaser.Scene {
         value:
           this.payload.hpRemaining !== undefined && this.payload.hpMax
             ? `${this.payload.hpRemaining}/${this.payload.hpMax}`
-            : '—',
+            : '-',
         color: HEX.ink900
       },
       { caption: 'EARNED', value: `+${this.payload.baseReward}g`, color: HEX.ink900 }
@@ -208,16 +208,14 @@ export class LevelCompleteScene extends Phaser.Scene {
     const cta = this.add.rectangle(cx, y, ctaW, ctaH, COLORS.azure500, 0.18);
     cta.setStrokeStyle(2, COLORS.azure500);
 
-    // Azure square icon plate on the left
+    // Azure square icon plate on the left, with a drawn play triangle.
     const iconX = cx - ctaW / 2 + 36;
     this.add.rectangle(iconX, y, 44, 44, COLORS.azure500).setStrokeStyle(3, COLORS.ink900);
-    this.add
-      .text(iconX, y, '▶', {
-        fontFamily: FONTS.display,
-        fontSize: '22px',
-        color: HEX.gold400
-      })
-      .setOrigin(0.5);
+    const play = this.add.graphics();
+    play.fillStyle(COLORS.gold400, 1);
+    play.fillTriangle(iconX - 7, y - 9, iconX - 7, y + 9, iconX + 9, y);
+    play.lineStyle(2, COLORS.ink900);
+    play.strokeTriangle(iconX - 7, y - 9, iconX - 7, y + 9, iconX + 9, y);
 
     this.add
       .text(iconX + 36, y - 12, 'Double your gold this wave', {
@@ -227,7 +225,7 @@ export class LevelCompleteScene extends Phaser.Scene {
       })
       .setOrigin(0, 0.5);
     this.adSubtext = this.add
-      .text(iconX + 36, y + 12, `Watch a short ad · +${this.bonusAmount()}g bonus`, {
+      .text(iconX + 36, y + 12, `Watch a short ad * +${this.bonusAmount()}g bonus`, {
         fontFamily: FONTS.body,
         fontSize: '13px',
         color: HEX.ink700
@@ -318,7 +316,7 @@ export class LevelCompleteScene extends Phaser.Scene {
       this.adButton.setLabel('Done');
     } else {
       this.adSubtext.setText('Ad unavailable');
-      this.adButton.setLabel('—');
+      this.adButton.setLabel('-');
     }
   }
 

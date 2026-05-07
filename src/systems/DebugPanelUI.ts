@@ -280,7 +280,7 @@ export class DebugPanelUI {
       const baseValue = baseStats[stat];
       if (baseValue === undefined) {
         input.disabled = true;
-        input.placeholder = '—';
+        input.placeholder = '-';
       } else {
         input.placeholder = String(baseValue);
         const override = DebugCheatSystem.getFor(kind)[stat];

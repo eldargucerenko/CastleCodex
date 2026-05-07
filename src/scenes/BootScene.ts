@@ -55,7 +55,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   // Pull cloud save into localStorage if the SDK has any. localStorage stays
-  // the local source of truth — we just hydrate it from the cloud at boot so
+  // the local source of truth - we just hydrate it from the cloud at boot so
   // the rest of the game can keep using SaveSystem synchronously.
   private async mergeCloudSave(): Promise<void> {
     const cloud = await cloudLoad();

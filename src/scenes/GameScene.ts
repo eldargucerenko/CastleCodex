@@ -227,7 +227,7 @@ export class GameScene extends Phaser.Scene {
     this.add
       .circle(width - 200, 92, 44, COLORS.gold400, 0.18);
 
-    // Drifting clouds — soft pill shapes.
+    // Drifting clouds - soft pill shapes.
     this.makeCloud(160, 90, 80, 16);
     this.makeCloud(140, 102, 120, 14);
     this.makeCloud(580, 130, 90, 14);
@@ -248,7 +248,7 @@ export class GameScene extends Phaser.Scene {
     hills.closePath();
     hills.fillPath();
 
-    // Ground band — top stripe is a touch lighter for soft horizon banding.
+    // Ground band - top stripe is a touch lighter for soft horizon banding.
     this.add.rectangle(width / 2, horizonY + groundHeight / 2, width, groundHeight, COLORS.groundTop);
     this.add.rectangle(width / 2, horizonY - 1, width, 3, COLORS.groundBot);
     this.add.rectangle(width / 2, horizonY + groundHeight - 4, width, 6, COLORS.groundBot, 0.6);
@@ -297,7 +297,7 @@ export class GameScene extends Phaser.Scene {
     this.hpBar.setProgress(1);
     this.hpBar.container.setDepth(depth);
 
-    // TOP-RIGHT cluster: gold panel · sound · pause, anchored from right edge.
+    // TOP-RIGHT cluster: gold panel * sound * pause, anchored from right edge.
     const w = Number(this.game.config.width);
     const rightPad = 12;
     const iconSize = 32;
@@ -311,14 +311,15 @@ export class GameScene extends Phaser.Scene {
     const goldPanelRight = soundCenterX - iconSize / 2 - gap;
     const goldPanelCenterX = goldPanelRight - goldPanelW / 2;
     makePanel(this, goldPanelCenterX, 28, goldPanelW, iconSize).setDepth(depth);
-    this.add
-      .text(goldPanelCenterX - goldPanelW / 2 + 14, 28, '🪙', {
-        fontFamily: FONTS.display,
-        fontSize: '18px',
-        color: HEX.gold500
-      })
-      .setOrigin(0, 0.5)
-      .setDepth(depth);
+    const coinX = goldPanelCenterX - goldPanelW / 2 + 18;
+    const coin = this.add.graphics();
+    coin.fillStyle(COLORS.gold400, 1);
+    coin.fillCircle(coinX, 28, 9);
+    coin.lineStyle(2, COLORS.ink900);
+    coin.strokeCircle(coinX, 28, 9);
+    coin.lineStyle(1, COLORS.ink900);
+    coin.strokeCircle(coinX, 28, 5);
+    coin.setDepth(depth);
     this.goldText = this.add
       .text(goldPanelCenterX + goldPanelW / 2 - 12, 28, '', {
         fontFamily: FONTS.display,
@@ -331,9 +332,7 @@ export class GameScene extends Phaser.Scene {
     const soundButton = this.makeSoundButton(soundCenterX, 28, iconSize);
     soundButton.setDepth(depth);
 
-    this.makeIconButton(pauseCenterX, 28, iconSize, '❚❚', () => this.openPauseMenu()).setDepth(
-      depth
-    );
+    this.makePauseButton(pauseCenterX, 28, iconSize).setDepth(depth);
 
     this.refreshUi();
   }
@@ -386,25 +385,20 @@ export class GameScene extends Phaser.Scene {
     return c;
   }
 
-  private makeIconButton(
-    x: number,
-    y: number,
-    size: number,
-    glyph: string,
-    onClick: () => void
-  ): Phaser.GameObjects.Container {
+  private makePauseButton(x: number, y: number, size: number): Phaser.GameObjects.Container {
     const c = this.add.container(x, y);
     const bg = this.add
       .rectangle(0, 0, size, size, COLORS.parchment200)
       .setStrokeStyle(3, COLORS.ink700);
-    const label = this.add
-      .text(0, 0, glyph, { fontFamily: FONTS.display, fontSize: '16px', color: HEX.ink700 })
-      .setOrigin(0.5);
-    c.add([bg, label]);
+    const icon = this.add.graphics();
+    icon.fillStyle(COLORS.ink700, 1);
+    icon.fillRect(-6, -7, 4, 14);
+    icon.fillRect(2, -7, 4, 14);
+    c.add([bg, icon]);
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerover', () => bg.setFillStyle(COLORS.parchment100));
     bg.on('pointerout', () => bg.setFillStyle(COLORS.parchment200));
-    bg.on('pointerdown', onClick);
+    bg.on('pointerdown', () => this.openPauseMenu());
     return c;
   }
 
@@ -413,7 +407,7 @@ export class GameScene extends Phaser.Scene {
     this.levelText.setText(`${this.save.currentLevel} / 10`);
     this.hpText.setText(`${this.castle.currentHp}/${this.castle.maxHp}`);
     this.goldText.setText(`${this.save.gold}`);
-    this.enemiesText.setText(`☠ ${enemiesLeft}`);
+    this.enemiesText.setText(`Enemies: ${enemiesLeft}`);
     if (this.castle.maxHp > 0) {
       this.hpBar?.setProgress(this.castle.currentHp / this.castle.maxHp);
     }

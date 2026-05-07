@@ -62,7 +62,7 @@ export class UpgradeScene extends Phaser.Scene {
       .text(
         18,
         headerH / 2 + 14,
-        `Between Wave ${Math.max(0, this.save.currentLevel - 1)} · ${this.save.currentLevel}`,
+        `Between Wave ${Math.max(0, this.save.currentLevel - 1)} / ${this.save.currentLevel}`,
         {
           fontFamily: FONTS.body,
           fontSize: '11px',
@@ -76,7 +76,7 @@ export class UpgradeScene extends Phaser.Scene {
     const hpChip = this.add.rectangle(hpX, headerH / 2, 130, 32, COLORS.ink900).setStrokeStyle(2, COLORS.gold500);
     hpChip.setOrigin(0.5);
     this.add
-      .text(hpX, headerH / 2, `❤  ${this.save.currentHp}/${this.save.maxHp}`, {
+      .text(hpX, headerH / 2, `HP  ${this.save.currentHp}/${this.save.maxHp}`, {
         fontFamily: FONTS.display,
         fontSize: '15px',
         color: HEX.bone100
@@ -87,13 +87,25 @@ export class UpgradeScene extends Phaser.Scene {
     const goldX = w - 80;
     const goldChip = this.add.rectangle(goldX, headerH / 2, 130, 32, COLORS.gold500).setStrokeStyle(2, COLORS.ink900);
     goldChip.setOrigin(0.5);
+    this.drawCoin(goldX - 42, headerH / 2, 12);
     this.add
-      .text(goldX, headerH / 2, `🪙  ${this.save.gold}`, {
+      .text(goldX - 18, headerH / 2, `${this.save.gold}`, {
         fontFamily: FONTS.display,
         fontSize: '17px',
         color: HEX.ink900
       })
-      .setOrigin(0.5);
+      .setOrigin(0, 0.5);
+  }
+
+  private drawCoin(x: number, y: number, radius: number): Phaser.GameObjects.Graphics {
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.gold400, 1);
+    g.fillCircle(x, y, radius);
+    g.lineStyle(2, COLORS.ink900);
+    g.strokeCircle(x, y, radius);
+    g.lineStyle(1, COLORS.ink900);
+    g.strokeCircle(x, y, radius - 3);
+    return g;
   }
 
   private drawUpgradeGrid(w: number): void {
@@ -133,7 +145,7 @@ export class UpgradeScene extends Phaser.Scene {
       const tag = this.add.rectangle(x + w / 2 - 50, y - h / 2 + 2, 84, 18, COLORS.gold500);
       tag.setStrokeStyle(2, COLORS.ink900);
       this.add
-        .text(x + w / 2 - 50, y - h / 2 + 2, '★ PICK', {
+        .text(x + w / 2 - 50, y - h / 2 + 2, 'PICK', {
           fontFamily: FONTS.display,
           fontSize: '12px',
           color: HEX.ink900
@@ -200,7 +212,7 @@ export class UpgradeScene extends Phaser.Scene {
       const btn = makeButton(this, x, btnY, {
         width: btnW,
         height: 32,
-        label: `🪙  ${cost}`,
+        label: `${cost} g`,
         variant: affordable ? 'primary' : 'secondary',
         size: 'sm',
         onClick: () => this.buy(upg.key)
@@ -314,21 +326,21 @@ export class UpgradeScene extends Phaser.Scene {
   private iconGlyph(key: UpgradeKey): string {
     switch (key) {
       case 'walls':
-        return '▥';
+        return 'W';
       case 'archers':
-        return '➤';
+        return 'A';
       case 'log':
-        return '◈';
+        return 'L';
       case 'mage':
-        return '✦';
+        return 'M';
       case 'repair':
-        return '❤';
+        return 'HP';
       case 'healArchers':
-        return '+';
+        return '+A';
       case 'healMage':
-        return '+';
+        return '+M';
       default:
-        return '★';
+        return '*';
     }
   }
 
