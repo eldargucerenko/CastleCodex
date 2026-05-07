@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { trackLevelReplay } from '../sdk/gamepush';
 import { SaveSystem } from '../systems/SaveSystem';
+import { COLORS, FONTS, HEX, makeButton, makePanel } from '../ui/theme';
 
 export class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -8,22 +9,42 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(): void {
-    const width = Number(this.game.config.width);
-    const height = Number(this.game.config.height);
+    const w = Number(this.game.config.width);
+    const h = Number(this.game.config.height);
     const lostLevel = SaveSystem.load().currentLevel;
-    this.add.rectangle(width / 2, height / 2, width, height, 0x111827);
-    this.add.text(width / 2, height / 2 - 70, 'Game Over', { color: '#fee2e2', fontSize: '46px', fontStyle: 'bold' }).setOrigin(0.5);
-    this.add.text(width / 2, height / 2 - 18, 'The castle has fallen.', { color: '#e5e7eb', fontSize: '20px' }).setOrigin(0.5);
-    this.button(width / 2, height / 2 + 58, 'Restart', () => {
-      trackLevelReplay(lostLevel);
-      SaveSystem.reset();
-      this.scene.start('GameScene');
-    });
-  }
 
-  private button(x: number, y: number, label: string, onClick: () => void): void {
-    const rect = this.add.rectangle(x, y, 210, 58, 0xffffff).setStrokeStyle(2, 0xfca5a5).setInteractive({ useHandCursor: true });
-    this.add.text(x, y, label, { color: '#111827', fontSize: '22px', fontStyle: 'bold' }).setOrigin(0.5);
-    rect.on('pointerdown', onClick);
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(COLORS.nightBg, COLORS.nightBg, COLORS.ember600, COLORS.ember600, 1, 1, 1, 1);
+    bg.fillRect(0, 0, w, h);
+
+    makePanel(this, w / 2, h / 2, 460, 240, { fill: COLORS.parchment200, border: COLORS.ember500 });
+
+    this.add
+      .text(w / 2, h / 2 - 70, 'Game Over', {
+        fontFamily: FONTS.display,
+        fontSize: '40px',
+        color: HEX.ember500
+      })
+      .setOrigin(0.5);
+    this.add
+      .text(w / 2, h / 2 - 24, 'The castle has fallen.', {
+        fontFamily: FONTS.body,
+        fontSize: '15px',
+        color: HEX.ink700
+      })
+      .setOrigin(0.5);
+
+    makeButton(this, w / 2, h / 2 + 50, {
+      width: 220,
+      height: 50,
+      label: 'Restart',
+      variant: 'primary',
+      size: 'md',
+      onClick: () => {
+        trackLevelReplay(lostLevel);
+        SaveSystem.reset();
+        this.scene.start('GameScene');
+      }
+    });
   }
 }

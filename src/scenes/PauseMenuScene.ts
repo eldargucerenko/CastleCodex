@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { getSdkMuted, setSdkMuted } from '../sdk/gamepush';
 import { SaveSystem } from '../systems/SaveSystem';
+import { COLORS, FONTS, HEX, makeButton, makePanel } from '../ui/theme';
 
 const MUTED_KEY = 'castle-codex-muted';
 
@@ -12,9 +13,8 @@ export class PauseMenuScene extends Phaser.Scene {
   private fromScene = 'GameScene';
   private muted = false;
   private confirmReset = false;
-  private soundLabel!: Phaser.GameObjects.Text;
-  private resetLabel!: Phaser.GameObjects.Text;
-  private resetRect!: Phaser.GameObjects.Rectangle;
+  private soundButton!: ReturnType<typeof makeButton>;
+  private resetButton!: ReturnType<typeof makeButton>;
 
   constructor() {
     super('PauseMenuScene');
@@ -30,58 +30,65 @@ export class PauseMenuScene extends Phaser.Scene {
     const w = Number(this.game.config.width);
     const h = Number(this.game.config.height);
 
-    this.add.rectangle(w / 2, h / 2, w, h, 0x0f172a, 0.78);
+    this.add.rectangle(w / 2, h / 2, w, h, COLORS.nightBg, 0.78);
 
     const panelW = 380;
     const panelH = 360;
-    this.add.rectangle(w / 2, h / 2, panelW, panelH, 0xfef9c3).setStrokeStyle(3, 0x854d0e);
+    const cx = w / 2;
+    const cy = h / 2;
+    makePanel(this, cx, cy, panelW, panelH);
 
     this.add
-      .text(w / 2, h / 2 - panelH / 2 + 36, 'Paused', {
-        color: '#78350f',
+      .text(cx, cy - panelH / 2 + 38, 'Paused', {
+        fontFamily: FONTS.display,
         fontSize: '32px',
-        fontStyle: 'bold'
+        color: HEX.ink900
+      })
+      .setOrigin(0.5);
+    this.add
+      .text(cx, cy - panelH / 2 + 70, 'TAKE A BREATH', {
+        fontFamily: FONTS.body,
+        fontSize: '11px',
+        color: HEX.ink500
       })
       .setOrigin(0.5);
 
-    this.makeButton(w / 2, h / 2 - 50, 240, 48, 'Continue', 0x10b981, 0x059669, '#ffffff', () =>
-      this.continue()
-    );
+    makeButton(this, cx, cy - 30, {
+      width: 240,
+      height: 48,
+      label: 'Continue',
+      variant: 'primary',
+      size: 'md',
+      onClick: () => this.continueGame()
+    });
 
-    const resetBtn = this.makeButton(
-      w / 2,
-      h / 2 + 10,
-      240,
-      48,
-      'New Game',
-      0xdc2626,
-      0xb91c1c,
-      '#ffffff',
-      () => this.handleReset()
-    );
-    this.resetLabel = resetBtn;
-    this.resetRect = resetBtn.getData('rect') as Phaser.GameObjects.Rectangle;
+    this.resetButton = makeButton(this, cx, cy + 30, {
+      width: 240,
+      height: 48,
+      label: 'New Game',
+      variant: 'danger',
+      size: 'md',
+      onClick: () => this.handleReset()
+    });
 
-    this.soundLabel = this.makeButton(
-      w / 2,
-      h / 2 + 70,
-      240,
-      48,
-      this.soundButtonLabel(),
-      0x6366f1,
-      0x4f46e5,
-      '#ffffff',
-      () => this.toggleSound()
-    );
+    this.soundButton = makeButton(this, cx, cy + 90, {
+      width: 240,
+      height: 48,
+      label: this.soundButtonLabel(),
+      variant: 'secondary',
+      size: 'md',
+      onClick: () => this.toggleSound()
+    });
 
     this.add
-      .text(w / 2, h / 2 + panelH / 2 - 28, 'Press Esc to continue', {
-        color: '#78350f',
-        fontSize: '13px'
+      .text(cx, cy + panelH / 2 - 22, 'Press Esc to continue', {
+        fontFamily: FONTS.body,
+        fontSize: '11px',
+        color: HEX.ink500
       })
       .setOrigin(0.5);
 
-    this.input.keyboard?.on('keydown-ESC', () => this.continue());
+    this.input.keyboard?.on('keydown-ESC', () => this.continueGame());
   }
 
   private soundButtonLabel(): string {
@@ -91,50 +98,23 @@ export class PauseMenuScene extends Phaser.Scene {
   private toggleSound(): void {
     this.muted = !this.muted;
     PauseMenuScene.saveMuted(this.muted);
-    this.soundLabel.setText(this.soundButtonLabel());
+    this.soundButton.setLabel(this.soundButtonLabel());
   }
 
   private handleReset(): void {
     if (!this.confirmReset) {
       this.confirmReset = true;
-      this.resetLabel.setText('Confirm? Tap again');
-      this.resetRect.setFillStyle(0xb91c1c);
+      this.resetButton.setLabel('Tap again to confirm');
       return;
     }
     SaveSystem.reset();
     this.scene.stop(this.fromScene);
     this.scene.start('GameScene');
-    this.scene.stop();
   }
 
-  private continue(): void {
+  private continueGame(): void {
     this.scene.resume(this.fromScene);
     this.scene.stop();
-  }
-
-  private makeButton(
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    label: string,
-    fillIdle: number,
-    fillHover: number,
-    textColor: string,
-    onClick: () => void
-  ): Phaser.GameObjects.Text {
-    const rect = this.add
-      .rectangle(x, y, w, h, fillIdle)
-      .setStrokeStyle(2, 0x0f172a)
-      .setInteractive({ useHandCursor: true });
-    const text = this.add
-      .text(x, y, label, { color: textColor, fontSize: '20px', fontStyle: 'bold' })
-      .setOrigin(0.5);
-    rect.on('pointerover', () => rect.setFillStyle(fillHover));
-    rect.on('pointerout', () => rect.setFillStyle(fillIdle));
-    rect.on('pointerdown', onClick);
-    text.setData('rect', rect);
-    return text;
   }
 
   static loadMuted(): boolean {

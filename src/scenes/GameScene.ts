@@ -14,6 +14,7 @@ import type { EnemyKind, SaveData } from '../types/game';
 import { RollingLog } from '../entities/RollingLog';
 import { TutorialSystem } from '../systems/TutorialSystem';
 import { ENEMY_STATS } from '../data/enemies';
+import { COLORS, FONTS, HEX, makeBar, makePanel } from '../ui/theme';
 
 export class GameScene extends Phaser.Scene {
   private save!: SaveData;
@@ -32,6 +33,7 @@ export class GameScene extends Phaser.Scene {
   private hpText!: Phaser.GameObjects.Text;
   private goldText!: Phaser.GameObjects.Text;
   private enemiesText!: Phaser.GameObjects.Text;
+  private hpBar?: ReturnType<typeof makeBar>;
   private hasTemporaryLevelOneArcher = false;
   private hasTemporaryLevelOneMage = false;
   private hasTemporaryLevelOneLog = false;
@@ -207,30 +209,81 @@ export class GameScene extends Phaser.Scene {
     const width = Number(this.game.config.width);
     const height = Number(this.game.config.height);
     const groundHeight = 124;
-    this.add.rectangle(width / 2, height / 2, width, height, 0x93c5fd);
-    this.add.rectangle(width / 2, height - groundHeight / 2, width, groundHeight, 0x65a30d);
-    this.add.rectangle(width / 2, height - groundHeight - 2, width, 4, 0x365314);
-    this.add.text(width - 274, 18, 'Drag enemies to throw them', {
-      color: '#111827',
-      fontSize: '18px',
-      fontStyle: 'bold'
-    });
+    this.add.rectangle(width / 2, height / 2, width, height, COLORS.skyTop);
+    this.add.rectangle(width / 2, height - groundHeight / 2, width, groundHeight, COLORS.groundTop);
+    this.add.rectangle(width / 2, height - groundHeight - 2, width, 4, COLORS.groundBot);
   }
 
   private createUi(): void {
-    this.levelText = this.add.text(14, 48, '', { color: '#111827', fontSize: '18px', fontStyle: 'bold' }).setDepth(100);
-    this.hpText = this.add.text(14, 72, '', { color: '#111827', fontSize: '18px', fontStyle: 'bold' }).setDepth(100);
-    this.goldText = this.add.text(14, 96, '', { color: '#111827', fontSize: '18px', fontStyle: 'bold' }).setDepth(100);
-    this.enemiesText = this.add.text(14, 120, '', { color: '#111827', fontSize: '18px', fontStyle: 'bold' }).setDepth(100);
+    const depth = 100;
+
+    // TOP-LEFT: Wave panel + Castle HP panel
+    makePanel(this, 150, 28, 264, 36).setDepth(depth);
+    const waveBadge = this.add.rectangle(40, 28, 56, 22, COLORS.ink900).setStrokeStyle(2, COLORS.ink900);
+    waveBadge.setDepth(depth);
+    this.add
+      .text(40, 28, 'WAVE', { fontFamily: FONTS.display, fontSize: '14px', color: HEX.gold400 })
+      .setOrigin(0.5)
+      .setDepth(depth);
+    this.levelText = this.add
+      .text(82, 28, '', { fontFamily: FONTS.display, fontSize: '22px', color: HEX.ink900 })
+      .setOrigin(0, 0.5)
+      .setDepth(depth);
+    this.enemiesText = this.add
+      .text(265, 28, '', { fontFamily: FONTS.display, fontSize: '14px', color: HEX.ink700 })
+      .setOrigin(1, 0.5)
+      .setDepth(depth);
+
+    // HP panel (below wave panel)
+    makePanel(this, 150, 76, 264, 44).setDepth(depth);
+    this.add
+      .text(20, 64, 'CASTLE HP', { fontFamily: FONTS.body, fontSize: '10px', color: HEX.ink500 })
+      .setOrigin(0, 0.5)
+      .setDepth(depth);
+    this.hpText = this.add
+      .text(265, 64, '', { fontFamily: FONTS.display, fontSize: '14px', color: HEX.ink900 })
+      .setOrigin(1, 0.5)
+      .setDepth(depth);
+    this.hpBar = makeBar(this, 150, 86, 248, 12, COLORS.ember500);
+    this.hpBar.setProgress(1);
+    this.hpBar.container.setDepth(depth);
+
+    // TOP-RIGHT: gold panel + pause icon
+    const w = Number(this.game.config.width);
+    makePanel(this, w - 120, 28, 160, 36).setDepth(depth);
+    this.add
+      .text(w - 178, 28, '🪙', { fontFamily: FONTS.display, fontSize: '20px', color: HEX.gold500 })
+      .setOrigin(0, 0.5)
+      .setDepth(depth);
+    this.goldText = this.add
+      .text(w - 60, 28, '', { fontFamily: FONTS.display, fontSize: '20px', color: HEX.ink900 })
+      .setOrigin(1, 0.5)
+      .setDepth(depth);
+
+    // Pause icon (touch-friendly)
+    const pauseBg = this.add
+      .rectangle(w - 28, 28, 32, 32, COLORS.parchment200)
+      .setStrokeStyle(3, COLORS.ink700)
+      .setDepth(depth);
+    pauseBg.setInteractive({ useHandCursor: true });
+    this.add
+      .text(w - 28, 28, '❚❚', { fontFamily: FONTS.display, fontSize: '14px', color: HEX.ink700 })
+      .setOrigin(0.5)
+      .setDepth(depth);
+    pauseBg.on('pointerdown', () => this.openPauseMenu());
+
     this.refreshUi();
   }
 
   private refreshUi(): void {
     const enemiesLeft = this.enemies.length + this.wave.remainingQueued;
-    this.levelText.setText(`Level ${this.save.currentLevel}`);
-    this.hpText.setText(`Castle HP ${this.castle.currentHp}/${this.castle.maxHp}`);
-    this.goldText.setText(`Gold ${this.save.gold}`);
-    this.enemiesText.setText(`Enemies left ${enemiesLeft}`);
+    this.levelText.setText(`${this.save.currentLevel} / 10`);
+    this.hpText.setText(`${this.castle.currentHp}/${this.castle.maxHp}`);
+    this.goldText.setText(`${this.save.gold}`);
+    this.enemiesText.setText(`☠ ${enemiesLeft}`);
+    if (this.castle.maxHp > 0) {
+      this.hpBar?.setProgress(this.castle.currentHp / this.castle.maxHp);
+    }
   }
 
   private collectDeadEnemies(): void {
@@ -276,7 +329,9 @@ export class GameScene extends Phaser.Scene {
         levelCompleted,
         baseReward: reward,
         elapsedMs,
-        hasNextLevel: this.save.currentLevel <= 10
+        hasNextLevel: this.save.currentLevel <= 10,
+        hpRemaining: this.save.currentHp,
+        hpMax: this.save.maxHp
       });
     });
   }

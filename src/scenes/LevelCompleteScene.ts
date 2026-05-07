@@ -1,23 +1,27 @@
 import Phaser from 'phaser';
 import { showRewardedAd } from '../sdk/gamepush';
 import { SaveSystem } from '../systems/SaveSystem';
+import { COLORS, FONTS, HEX, drawStar, makeButton, makePanel } from '../ui/theme';
 
 interface LevelCompleteData {
   levelCompleted: number;
   baseReward: number;
   elapsedMs: number;
   hasNextLevel: boolean;
+  hpRemaining?: number;
+  hpMax?: number;
 }
 
 const AD_BONUS_MULTIPLIER = 1; // +100% on top of base reward when ad is watched
+const TOTAL_LEVELS = 10;
 
 export class LevelCompleteScene extends Phaser.Scene {
   private payload!: LevelCompleteData;
   private bonusClaimed = false;
   private adInFlight = false;
-  private rewardText!: Phaser.GameObjects.Text;
-  private adRect!: Phaser.GameObjects.Rectangle;
-  private adLabel!: Phaser.GameObjects.Text;
+  private earnedText!: Phaser.GameObjects.Text;
+  private adButton!: ReturnType<typeof makeButton>;
+  private adSubtext!: Phaser.GameObjects.Text;
 
   constructor() {
     super('LevelCompleteScene');
@@ -30,61 +34,257 @@ export class LevelCompleteScene extends Phaser.Scene {
   }
 
   create(): void {
-    const width = Number(this.game.config.width);
-    const height = Number(this.game.config.height);
+    const w = Number(this.game.config.width);
+    const h = Number(this.game.config.height);
 
-    this.add.rectangle(width / 2, height / 2, width, height, 0x0f172a, 0.78);
-
-    const panelW = 480;
-    const panelH = 360;
-    const cx = width / 2;
-    const cy = height / 2;
-    this.add.rectangle(cx, cy, panelW, panelH, 0xfef9c3).setStrokeStyle(3, 0x854d0e);
-
-    this.add
-      .text(cx, cy - panelH / 2 + 36, 'Level Complete', {
-        color: '#78350f',
-        fontSize: '32px',
-        fontStyle: 'bold'
-      })
-      .setOrigin(0.5);
-    this.add
-      .text(cx, cy - panelH / 2 + 70, `Level ${this.payload.levelCompleted}`, {
-        color: '#92400e',
-        fontSize: '18px'
-      })
-      .setOrigin(0.5);
-
-    this.add
-      .text(cx, cy - 28, `Time: ${this.formatElapsed(this.payload.elapsedMs)}`, {
-        color: '#1f2937',
-        fontSize: '22px'
-      })
-      .setOrigin(0.5);
-
-    this.rewardText = this.add
-      .text(cx, cy + 8, this.rewardLine(), {
-        color: '#1f2937',
-        fontSize: '22px',
-        fontStyle: 'bold'
-      })
-      .setOrigin(0.5);
-
-    this.makeAdButton(cx, cy + 64);
-
-    const continueLabel = this.payload.hasNextLevel ? 'Continue' : 'Finish';
-    this.makeContinueButton(cx, cy + 130, continueLabel, () => this.continue());
+    this.drawBackdrop(w, h);
+    this.drawSparks(w, h);
+    this.drawBanner(w);
+    this.drawMainPanel(w, h);
+    this.drawCornerCopy(w, h);
   }
 
-  private rewardLine(): string {
-    const total = this.payload.baseReward + (this.bonusClaimed ? this.bonusAmount() : 0);
-    return this.bonusClaimed
-      ? `Gold earned: +${total}g (bonus +${this.bonusAmount()}g)`
-      : `Gold earned: +${total}g`;
+  private drawBackdrop(w: number, h: number): void {
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(COLORS.azure500, COLORS.azure500, COLORS.nightBg, COLORS.nightBg, 1, 1, 1, 1);
+    bg.fillRect(0, 0, w, h);
+    this.add.rectangle(w / 2, h / 2, w, h, COLORS.nightBg, 0.55);
+  }
+
+  private drawSparks(w: number, h: number): void {
+    const sparks: Array<{ x: number; y: number; c: number; s: number }> = [
+      { x: 120, y: 80, c: COLORS.gold400, s: 4 },
+      { x: 800, y: 100, c: COLORS.gold400, s: 6 },
+      { x: 200, y: 200, c: COLORS.bone100, s: 3 },
+      { x: 760, y: 240, c: COLORS.gold400, s: 5 },
+      { x: 80, y: 320, c: COLORS.bone100, s: 4 },
+      { x: 880, y: 360, c: COLORS.gold400, s: 4 },
+      { x: 160, y: 440, c: COLORS.bone100, s: 3 },
+      { x: 820, y: 460, c: COLORS.gold400, s: 5 },
+      { x: 480, y: 60, c: COLORS.bone100, s: 4 },
+      { x: 320, y: 120, c: COLORS.gold400, s: 3 },
+      { x: 640, y: 80, c: COLORS.bone100, s: 5 }
+    ];
+    for (const p of sparks) {
+      const dot = this.add.rectangle(p.x, p.y, p.s, p.s, p.c);
+      dot.setBlendMode(Phaser.BlendModes.ADD);
+      // tween a soft pulse so the panel feels alive
+      this.tweens.add({
+        targets: dot,
+        alpha: { from: 1, to: 0.3 },
+        duration: 800 + Math.random() * 800,
+        yoyo: true,
+        repeat: -1,
+        delay: Math.random() * 600
+      });
+    }
+  }
+
+  private drawBanner(w: number): void {
+    const cx = w / 2;
+    const top = 30;
+    const bw = 460;
+    const bh = 110;
+
+    // Pennon-style banner (top rectangle + bottom V cutout)
+    const banner = this.add.graphics();
+    banner.fillStyle(COLORS.ember500, 1);
+    banner.lineStyle(3, COLORS.ink900, 1);
+    banner.beginPath();
+    banner.moveTo(cx - bw / 2, top);
+    banner.lineTo(cx + bw / 2, top);
+    banner.lineTo(cx + bw / 2, top + bh * 0.75);
+    banner.lineTo(cx + bw * 0.4, top + bh);
+    banner.lineTo(cx, top + bh * 0.8);
+    banner.lineTo(cx - bw * 0.4, top + bh);
+    banner.lineTo(cx - bw / 2, top + bh * 0.75);
+    banner.closePath();
+    banner.fillPath();
+    banner.strokePath();
+
+    // Inner highlight stroke for the parchment-style sheen
+    const sheen = this.add.graphics();
+    sheen.fillStyle(0xffffff, 0.12);
+    sheen.fillRect(cx - bw / 2 + 4, top + 4, bw - 8, 14);
+
+    this.add
+      .text(cx, top + 26, 'WAVE CLEARED', {
+        fontFamily: FONTS.display,
+        fontSize: '14px',
+        color: HEX.gold400
+      })
+      .setOrigin(0.5);
+    this.add
+      .text(cx, top + 60, `${this.payload.levelCompleted} / ${TOTAL_LEVELS}`, {
+        fontFamily: FONTS.display,
+        fontSize: '46px',
+        color: HEX.bone100
+      })
+      .setOrigin(0.5)
+      .setShadow(2, 2, '#1a0e08', 0, false, true);
+
+    // tassels under each tail
+    [-bw / 2 + 18, bw / 2 - 18].forEach((dx) => {
+      this.add.rectangle(cx + dx, top + bh + 8, 4, 16, COLORS.gold400).setStrokeStyle(2, COLORS.ink900);
+    });
+  }
+
+  private drawMainPanel(w: number, _h: number): void {
+    const cx = w / 2;
+    const top = 175;
+    const panelW = 600;
+    const panelH = 320;
+    makePanel(this, cx, top + panelH / 2, panelW, panelH);
+
+    // Stars overlap the top of the panel
+    const stars = this.starsFromHp();
+    const starY = top - 4;
+    [-72, 0, 72].forEach((dx, i) => {
+      drawStar(this, cx + dx, starY, i < stars, 56);
+    });
+
+    this.drawStatTiles(cx, top + 60, panelW);
+    this.drawAdCta(cx, top + 170, panelW);
+    this.drawActions(cx, top + panelH - 36, panelW);
+  }
+
+  private starsFromHp(): number {
+    if (this.payload.hpMax && this.payload.hpRemaining !== undefined) {
+      const pct = this.payload.hpRemaining / this.payload.hpMax;
+      if (pct > 0.75) return 3;
+      if (pct > 0.4) return 2;
+      return 1;
+    }
+    return 3; // no HP info — assume full clear
+  }
+
+  private drawStatTiles(cx: number, y: number, panelW: number): void {
+    const tileW = (panelW - 80) / 3;
+    const tileH = 64;
+    const tiles: Array<{ caption: string; value: string; color: string }> = [
+      { caption: 'TIME', value: this.formatElapsed(this.payload.elapsedMs), color: HEX.ink900 },
+      {
+        caption: 'CASTLE HP',
+        value:
+          this.payload.hpRemaining !== undefined && this.payload.hpMax
+            ? `${this.payload.hpRemaining}/${this.payload.hpMax}`
+            : '—',
+        color: HEX.ink900
+      },
+      { caption: 'EARNED', value: `+${this.payload.baseReward}g`, color: HEX.ink900 }
+    ];
+    tiles.forEach((tile, i) => {
+      const x = cx - panelW / 2 + 28 + tileW / 2 + i * (tileW + 14);
+      makePanel(this, x, y, tileW, tileH, {
+        fill: COLORS.parchment300,
+        inner: COLORS.parchment200,
+        border: COLORS.ink700,
+        borderWidth: 2
+      });
+      this.add
+        .text(x - tileW / 2 + 12, y - 16, tile.caption, {
+          fontFamily: FONTS.body,
+          fontSize: '10px',
+          color: HEX.ink500
+        })
+        .setOrigin(0, 0.5);
+      const valueText = this.add
+        .text(x - tileW / 2 + 12, y + 10, tile.value, {
+          fontFamily: FONTS.display,
+          fontSize: '24px',
+          color: tile.color
+        })
+        .setOrigin(0, 0.5);
+      if (i === 2) this.earnedText = valueText;
+    });
+  }
+
+  private drawAdCta(cx: number, y: number, panelW: number): void {
+    const ctaW = panelW - 56;
+    const ctaH = 64;
+    const cta = this.add.rectangle(cx, y, ctaW, ctaH, COLORS.azure500, 0.18);
+    cta.setStrokeStyle(2, COLORS.azure500);
+
+    // Azure square icon plate on the left
+    const iconX = cx - ctaW / 2 + 36;
+    this.add.rectangle(iconX, y, 44, 44, COLORS.azure500).setStrokeStyle(3, COLORS.ink900);
+    this.add
+      .text(iconX, y, '▶', {
+        fontFamily: FONTS.display,
+        fontSize: '22px',
+        color: HEX.gold400
+      })
+      .setOrigin(0.5);
+
+    this.add
+      .text(iconX + 36, y - 12, 'Double your gold this wave', {
+        fontFamily: FONTS.display,
+        fontSize: '18px',
+        color: HEX.ink900
+      })
+      .setOrigin(0, 0.5);
+    this.adSubtext = this.add
+      .text(iconX + 36, y + 12, `Watch a short ad · +${this.bonusAmount()}g bonus`, {
+        fontFamily: FONTS.body,
+        fontSize: '13px',
+        color: HEX.ink700
+      })
+      .setOrigin(0, 0.5);
+
+    this.adButton = makeButton(this, cx + ctaW / 2 - 60, y, {
+      width: 100,
+      height: 38,
+      label: 'Watch',
+      variant: 'ad',
+      size: 'sm',
+      onClick: () => void this.claimAd()
+    });
+  }
+
+  private drawActions(cx: number, y: number, panelW: number): void {
+    const continueLabel = this.payload.hasNextLevel ? 'Next Wave' : 'Finish';
+    const totalW = panelW - 56;
+    const gap = 12;
+    const replayW = 110;
+    const continueW = totalW - replayW - gap;
+
+    const replayX = cx - totalW / 2 + replayW / 2;
+    const continueX = cx + totalW / 2 - continueW / 2;
+
+    makeButton(this, replayX, y, {
+      width: replayW,
+      height: 44,
+      label: 'Replay',
+      variant: 'ghost',
+      size: 'sm',
+      onClick: () => this.replay()
+    });
+    makeButton(this, continueX, y, {
+      width: continueW,
+      height: 44,
+      label: continueLabel,
+      variant: 'primary',
+      size: 'md',
+      onClick: () => this.continueGame()
+    });
+  }
+
+  private drawCornerCopy(_w: number, h: number): void {
+    this.add
+      .text(14, h - 22, `Wave ${this.payload.levelCompleted} cleared`, {
+        fontFamily: FONTS.body,
+        fontSize: '11px',
+        color: HEX.bone100
+      })
+      .setOrigin(0, 0.5);
   }
 
   private bonusAmount(): number {
     return Math.round(this.payload.baseReward * AD_BONUS_MULTIPLIER);
+  }
+
+  private currentReward(): number {
+    return this.payload.baseReward + (this.bonusClaimed ? this.bonusAmount() : 0);
   }
 
   private formatElapsed(ms: number): string {
@@ -94,27 +294,12 @@ export class LevelCompleteScene extends Phaser.Scene {
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
-  private makeAdButton(x: number, y: number): void {
-    this.adRect = this.add
-      .rectangle(x, y, 300, 46, 0xfde68a)
-      .setStrokeStyle(2, 0xb45309)
-      .setInteractive({ useHandCursor: true });
-    this.adLabel = this.add
-      .text(x, y, `Watch Ad: +${this.bonusAmount()}g bonus`, {
-        color: '#78350f',
-        fontSize: '17px',
-        fontStyle: 'bold'
-      })
-      .setOrigin(0.5);
-    this.adRect.on('pointerdown', () => void this.claimAd());
-  }
-
   private async claimAd(): Promise<void> {
     if (this.bonusClaimed || this.adInFlight) return;
     this.adInFlight = true;
-    this.adRect.disableInteractive();
-    this.adRect.setFillStyle(0xfef3c7);
-    this.adLabel.setText('Loading ad...');
+    this.adButton.setEnabled(false);
+    this.adButton.setLabel('...');
+    this.adSubtext.setText('Loading ad...');
 
     const rewarded = await showRewardedAd();
     this.adInFlight = false;
@@ -125,27 +310,24 @@ export class LevelCompleteScene extends Phaser.Scene {
       save.gold += bonus;
       SaveSystem.save(save);
       this.bonusClaimed = true;
-      this.rewardText.setText(this.rewardLine());
-      this.adLabel.setText(`Bonus +${bonus}g claimed`);
-      this.adRect.setFillStyle(0xa7f3d0).setStrokeStyle(2, 0x047857);
+      this.earnedText.setText(`+${this.currentReward()}g`);
+      this.adSubtext.setText(`+${bonus}g bonus claimed`);
+      this.adButton.setLabel('Done');
     } else {
-      this.adLabel.setText('Ad unavailable');
-      this.adRect.setFillStyle(0xe5e7eb).setStrokeStyle(2, 0x9ca3af);
+      this.adSubtext.setText('Ad unavailable');
+      this.adButton.setLabel('—');
     }
   }
 
-  private makeContinueButton(x: number, y: number, label: string, onClick: () => void): void {
-    const rect = this.add
-      .rectangle(x, y, 220, 50, 0x10b981)
-      .setStrokeStyle(2, 0x064e3b)
-      .setInteractive({ useHandCursor: true });
-    this.add.text(x, y, label, { color: '#ffffff', fontSize: '20px', fontStyle: 'bold' }).setOrigin(0.5);
-    rect.on('pointerover', () => rect.setFillStyle(0x059669));
-    rect.on('pointerout', () => rect.setFillStyle(0x10b981));
-    rect.on('pointerdown', onClick);
+  private replay(): void {
+    const save = SaveSystem.load();
+    // Roll back to the level we just finished so the player retries it.
+    save.currentLevel = this.payload.levelCompleted;
+    SaveSystem.save(save);
+    this.scene.start('GameScene');
   }
 
-  private continue(): void {
+  private continueGame(): void {
     this.scene.start(this.payload.hasNextLevel ? 'UpgradeScene' : 'VictoryScene');
   }
 }
