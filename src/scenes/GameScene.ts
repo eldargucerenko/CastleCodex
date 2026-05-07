@@ -328,12 +328,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(1, 0.5)
       .setDepth(depth);
 
-    const soundButton = this.makeIconButton(soundCenterX, 28, iconSize, this.soundGlyph(), () => {
-      const next = !PauseMenuScene.loadMuted();
-      PauseMenuScene.saveMuted(next);
-      const label = soundButton.getAt(1) as Phaser.GameObjects.Text;
-      label.setText(next ? '✕' : '♪');
-    });
+    const soundButton = this.makeSoundButton(soundCenterX, 28, iconSize);
     soundButton.setDepth(depth);
 
     this.makeIconButton(pauseCenterX, 28, iconSize, '❚❚', () => this.openPauseMenu()).setDepth(
@@ -343,8 +338,52 @@ export class GameScene extends Phaser.Scene {
     this.refreshUi();
   }
 
-  private soundGlyph(): string {
-    return PauseMenuScene.loadMuted() ? '✕' : '♪';
+  private makeSoundButton(x: number, y: number, size: number): Phaser.GameObjects.Container {
+    const c = this.add.container(x, y);
+    const bg = this.add
+      .rectangle(0, 0, size, size, COLORS.parchment200)
+      .setStrokeStyle(3, COLORS.ink700);
+    const icon = this.add.graphics();
+    c.add([bg, icon]);
+
+    const draw = (muted: boolean) => {
+      icon.clear();
+      icon.lineStyle(2, COLORS.ink700);
+      icon.fillStyle(COLORS.ink700, 1);
+      // Speaker body: small rectangle on the left + triangular cone on the right.
+      icon.fillRect(-8, -3, 4, 6);
+      icon.beginPath();
+      icon.moveTo(-4, -6);
+      icon.lineTo(2, -8);
+      icon.lineTo(2, 8);
+      icon.lineTo(-4, 6);
+      icon.closePath();
+      icon.fillPath();
+      if (muted) {
+        icon.lineStyle(2.5, COLORS.ember500);
+        icon.lineBetween(-9, -9, 9, 9);
+      } else {
+        // Two arcs to suggest sound waves.
+        icon.lineStyle(2, COLORS.ink700);
+        icon.beginPath();
+        icon.arc(2, 0, 5, -0.7, 0.7);
+        icon.strokePath();
+        icon.beginPath();
+        icon.arc(2, 0, 8, -0.6, 0.6);
+        icon.strokePath();
+      }
+    };
+    draw(PauseMenuScene.loadMuted());
+
+    bg.setInteractive({ useHandCursor: true });
+    bg.on('pointerover', () => bg.setFillStyle(COLORS.parchment100));
+    bg.on('pointerout', () => bg.setFillStyle(COLORS.parchment200));
+    bg.on('pointerdown', () => {
+      const next = !PauseMenuScene.loadMuted();
+      PauseMenuScene.saveMuted(next);
+      draw(next);
+    });
+    return c;
   }
 
   private makeIconButton(
