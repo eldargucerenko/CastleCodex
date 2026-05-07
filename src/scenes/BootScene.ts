@@ -24,9 +24,24 @@ export class BootScene extends Phaser.Scene {
     for (const [key, name] of chibi) {
       this.load.image(key, `${assetBasePath}assets/enemies/${name}.png`);
     }
+    // Animated walk cycle for the basic knight (8 frames, tight-cropped).
+    this.load.spritesheet(
+      'enemy-knight-walk',
+      `${assetBasePath}assets/enemies/knight_walk_strip.png`,
+      { frameWidth: 501, frameHeight: 489 }
+    );
   }
 
   async create(): Promise<void> {
+    if (this.textures.exists('enemy-knight-walk') && !this.anims.exists('enemy-knight-walk')) {
+      this.anims.create({
+        key: 'enemy-knight-walk',
+        frames: this.anims.generateFrameNumbers('enemy-knight-walk', { start: 0, end: 7 }),
+        frameRate: 12,
+        repeat: -1
+      });
+    }
+
     const width = LOGICAL_W;
     const height = LOGICAL_H;
     this.add.rectangle(width / 2, height / 2, width, height, 0x111827);

@@ -5,6 +5,12 @@ import type { EnemyKind, EnemyState, EnemyStats, WizardState } from '../types/ga
 import type { Castle } from './Castle';
 import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
+// Animated walk-cycle key per enemy kind. Animations are created in
+// BootScene; missing entries fall back to the static SPRITE_BY_KIND map.
+const ANIMATED_BY_KIND: Partial<Record<EnemyKind, string>> = {
+  basic: 'enemy-knight-walk'
+};
+
 // Chibi sprite key for each enemy kind (loaded by BootScene). Wizard variants
 // share the base wizard art. fat is the "tosses other knights" enemy and
 // reads better as a big armored knight; trunk uses the log-carrier sprite.
@@ -65,19 +71,31 @@ export class Enemy extends Phaser.GameObjects.Container {
   }
 
   // Swap the colored-circle primitive for the chibi sprite if a texture for
-  // this kind has been loaded. Sprite scales so its height matches roughly
-  // 4x the gameplay radius, then flips horizontally because the source art
-  // faces right but enemies walk leftward toward the castle.
+  // this kind has been loaded. For the basic knight we use the animated walk
+  // sheet (when available) and fall back to the static knight.png otherwise.
+  // Sprite scales so its height matches roughly 4x the gameplay radius, then
+  // flips horizontally because the source art faces right but enemies walk
+  // leftward toward the castle.
   private maybeAttachChibiSprite(): void {
+    const animKey = ANIMATED_BY_KIND[this.kind];
+    if (animKey && this.scene.anims.exists(animKey)) {
+      this.attachSprite(animKey, /*animated*/ true);
+      return;
+    }
     const key = SPRITE_BY_KIND[this.kind];
     if (!key || !this.scene.textures.exists(key)) return;
+    this.attachSprite(key, /*animated*/ false);
+  }
+
+  private attachSprite(textureOrAnim: string, animated: boolean): void {
     this.shape.setVisible(false);
     this.labelText.setVisible(false);
     const targetH = this.stats.radius * 4.2;
-    const sprite = this.scene.add.sprite(0, -this.stats.radius * 0.6, key);
+    const sprite = this.scene.add.sprite(0, -this.stats.radius * 0.6, textureOrAnim);
     const aspect = sprite.width / sprite.height;
     sprite.setDisplaySize(targetH * aspect, targetH);
     sprite.setFlipX(true);
+    if (animated) sprite.play(textureOrAnim);
     this.addAt(sprite, 0);
   }
 
