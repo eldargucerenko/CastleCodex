@@ -27,14 +27,30 @@ function getAssetBasePath(): string {
   return './';
 }
 
-const KNIGHT_SPRITE_KINDS: ReadonlySet<EnemyKind> = new Set(['basic']);
+// Chibi sprite filenames for the debug panel. `basic` keeps the existing
+// animated knight frame; the other kinds reuse the chibi PNGs we ship for
+// the in-game sprites so the cheat panel matches what gets spawned.
+const CHIBI_SPRITE_BY_KIND: Partial<Record<EnemyKind, string>> = {
+  basic: 'Knight1/KnightRun1.png',
+  archer: 'enemies/archer.png',
+  bomber: 'enemies/bomber.png',
+  jumper: 'enemies/hammerman.png',
+  raider: 'enemies/raider.png',
+  fat: 'enemies/log_thrower.png',
+  wizard: 'enemies/wizard.png',
+  wizard_easy: 'enemies/wizard.png',
+  wizard_medium: 'enemies/wizard.png',
+  wizard_hard: 'enemies/wizard.png',
+  burning: 'enemies/heavy_knight.png'
+};
 
 function buildIcon(kind: EnemyKind): HTMLSpanElement {
   const wrap = document.createElement('span');
   wrap.className = 'dbg-icon';
-  if (KNIGHT_SPRITE_KINDS.has(kind)) {
+  const spritePath = CHIBI_SPRITE_BY_KIND[kind];
+  if (spritePath) {
     const img = document.createElement('img');
-    img.src = `${getAssetBasePath()}assets/Knight1/KnightRun1.png`;
+    img.src = `${getAssetBasePath()}assets/${spritePath}`;
     img.alt = kind;
     wrap.appendChild(img);
     return wrap;

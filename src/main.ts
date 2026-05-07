@@ -9,6 +9,13 @@ import { UpgradeScene } from './scenes/UpgradeScene';
 import { VictoryScene } from './scenes/VictoryScene';
 import { wireAudioMuteOnHide } from './sdk/audio';
 
+// Render the canvas pixel buffer at devicePixelRatio so retina / high-DPI /
+// 4K monitors don't bilinear-upscale a 960x540 canvas into mush. Logical
+// world coords stay 960x540 and we keep them everywhere in the codebase --
+// only the canvas's internal pixel count changes (zoom multiplies it).
+// Cap at 3 to avoid pathological 8K canvases.
+const RENDER_DPR = Math.min(window.devicePixelRatio || 1, 3);
+
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
@@ -24,7 +31,13 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   scale: {
     mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    zoom: RENDER_DPR
+  },
+  render: {
+    antialias: true,
+    roundPixels: true,
+    pixelArt: false
   },
   scene: [
     BootScene,
