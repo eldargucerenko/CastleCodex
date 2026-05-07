@@ -4,6 +4,22 @@ import { DebugCheatSystem } from '../systems/DebugCheatSystem';
 import type { BurningState, EnemyKind, EnemyState, EnemyStats, WizardState } from '../types/game';
 import type { Castle } from './Castle';
 
+// Chibi sprite key for each enemy kind (loaded by BootScene). Wizard variants
+// share the base wizard art. `basic` is omitted because BasicEnemy uses an
+// animated sprite sheet (Knight1) that we don't want to displace.
+const SPRITE_BY_KIND: Partial<Record<EnemyKind, string>> = {
+  archer: 'enemy-archer',
+  bomber: 'enemy-bomber',
+  jumper: 'enemy-jumper',
+  raider: 'enemy-raider',
+  fat: 'enemy-fat',
+  wizard: 'enemy-wizard',
+  wizard_easy: 'enemy-wizard',
+  wizard_medium: 'enemy-wizard',
+  wizard_hard: 'enemy-wizard',
+  burning: 'enemy-burning'
+};
+
 export class Enemy extends Phaser.GameObjects.Container {
   readonly stats: EnemyStats;
   readonly kind: EnemyKind;
@@ -44,6 +60,24 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.state = 'WalkToCastle';
     this.draw();
     this.refreshDepth();
+    this.maybeAttachChibiSprite();
+  }
+
+  // Swap the colored-circle primitive for the chibi sprite if a texture for
+  // this kind has been loaded. Sprite scales so its height matches roughly
+  // 4x the gameplay radius, then flips horizontally because the source art
+  // faces right but enemies walk leftward toward the castle.
+  private maybeAttachChibiSprite(): void {
+    const key = SPRITE_BY_KIND[this.kind];
+    if (!key || !this.scene.textures.exists(key)) return;
+    this.shape.setVisible(false);
+    this.labelText.setVisible(false);
+    const targetH = this.stats.radius * 4.2;
+    const sprite = this.scene.add.sprite(0, -this.stats.radius * 0.6, key);
+    const aspect = sprite.width / sprite.height;
+    sprite.setDisplaySize(targetH * aspect, targetH);
+    sprite.setFlipX(true);
+    this.addAt(sprite, 0);
   }
 
   get canBeGrabbed(): boolean {

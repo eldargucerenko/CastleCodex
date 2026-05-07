@@ -13,6 +13,20 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 474,
       frameHeight: 723
     });
+    // Chibi character sheet, sliced into per-enemy PNGs.
+    const chibi: Array<[string, string]> = [
+      ['enemy-archer', 'archer'],
+      ['enemy-bomber', 'bomber'],
+      ['enemy-jumper', 'hammerman'],
+      ['enemy-raider', 'raider'],
+      ['enemy-fat', 'log_thrower'],
+      ['enemy-wizard', 'wizard'],
+      ['enemy-burning', 'heavy_knight'],
+      ['enemy-knight', 'knight']
+    ];
+    for (const [key, name] of chibi) {
+      this.load.image(key, `${assetBasePath}assets/enemies/${name}.png`);
+    }
   }
 
   async create(): Promise<void> {
