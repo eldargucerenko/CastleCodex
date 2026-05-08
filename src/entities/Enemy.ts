@@ -262,15 +262,11 @@ export class Enemy extends Phaser.GameObjects.Container {
   }
 
   updateEnemy(time: number, delta: number, castle: Castle, _enemies: Enemy[] = []): void {
-    if (this.state === 'Dead' || this.state === 'Grabbed') {
-      this.updateWalkAnimation();
-      this.updateGroundShadow();
-      return;
-    }
+    // updateWalkAnimation + updateGroundShadow are driven by GameScene.update
+    // after this call so position-delta detection sees this frame's movement.
+    if (this.state === 'Dead' || this.state === 'Grabbed') return;
     if (this.state === 'Flying' || this.state === 'Stunned') {
       this.updateFlying(delta, castle);
-      this.updateWalkAnimation();
-      this.updateGroundShadow();
       return;
     }
 
@@ -282,22 +278,17 @@ export class Enemy extends Phaser.GameObjects.Container {
         this.lastAttackAt = time;
         castle.takeDamage(this.stats.attackDamage);
       }
-      this.updateWalkAnimation();
-      this.updateGroundShadow();
       return;
     }
 
     this.state = 'WalkToCastle';
     if (this.walkPaused) {
       this.refreshDepth();
-      this.updateWalkAnimation();
-      this.updateGroundShadow();
       return;
     }
     const slow = time < this.isSlowedUntil ? 0.45 : 1;
     this.x -= this.stats.speed * slow * (delta / 1000);
     this.refreshDepth();
-    this.updateWalkAnimation();
   }
 
   protected updateFlying(delta: number, castle: Castle): void {
