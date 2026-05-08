@@ -51,11 +51,16 @@ export class BootScene extends Phaser.Scene {
       'enemy-raider-walk', 'enemy-wizard-walk', 'enemy-heavy-knight-walk',
       'enemy-log-thrower-walk', 'enemy-jumper-walk'
     ];
+    // The WAN-generated strips don't always close cleanly between frame 7
+    // and the next loop's frame 0 -- there's a visible snap on every cycle.
+    // Looping 0..6 hides it; bump back to end:7 once strips are regenerated
+    // with seamless-loop prompting.
+    const WALK_LAST_FRAME = 6;
     for (const key of walkAnims) {
       if (this.textures.exists(key) && !this.anims.exists(key)) {
         this.anims.create({
           key,
-          frames: this.anims.generateFrameNumbers(key, { start: 0, end: 7 }),
+          frames: this.anims.generateFrameNumbers(key, { start: 0, end: WALK_LAST_FRAME }),
           frameRate: 8,
           repeat: -1
         });
