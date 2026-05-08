@@ -61,6 +61,8 @@ export class Enemy extends Phaser.GameObjects.Container {
   protected hpBar: Phaser.GameObjects.Rectangle;
   protected hpBack: Phaser.GameObjects.Rectangle;
   protected groundShadow: Phaser.GameObjects.Ellipse;
+  protected lastWalkX = 0;
+  protected lastWalkY = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind, groundY?: number) {
     super(scene, x, y);
@@ -126,15 +128,30 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.addAt(sprite, 0);
   }
 
-  // Resume the walk animation when the enemy is moving along the ground;
-  // freeze on frame 0 (idle stance) when stopped (attacking, grabbed, dying,
-  // tutorial-paused). Called every tick from updateEnemy and overrides.
-  protected updateWalkAnimation(): void {
+  // Resume the walk animation when the enemy is actually moving and freeze
+  // on frame 0 when stopped. Driven by position-delta so that subclasses that
+  // override updateEnemy without delegating (Archer, Jumper, Bomber, ...)
+  // still freeze correctly when their state stops moving them.
+  updateWalkAnimation(): void {
     if (!this.chibiSprite || !this.chibiAnimKey) return;
-    const moving =
-      (this.state === 'WalkToCastle' || this.state === 'WalkToRange') &&
-      !this.walkPaused &&
-      !this.isGrabbed;
+    const dx = this.x - this.lastWalkX;
+    const dy = this.y - this.lastWalkY;
+    this.lastWalkX = this.x;
+    this.lastWalkY = this.y;
+    // 0.05 px/frame threshold filters out subpixel jitter while still
+    // catching slow walks. Dead/grabbed/flying always counts as not walking.
+    // Anything 12 px or more above ground level is "in the air" -- jumper
+    // mid-arc, fat-thrown knight, anything launched. Walk cycle should freeze.
+    const altitude = (this.groundY - this.stats.radius) - this.y;
+    const stationary =
+      this.state === 'Dead' ||
+      this.state === 'Grabbed' ||
+      this.state === 'Flying' ||
+      this.state === 'Stunned' ||
+      this.walkPaused ||
+      this.isGrabbed ||
+      altitude > 12;
+    const moving = !stationary && Math.abs(dx) > 0.05;
     const isPlaying = this.chibiSprite.anims.isPlaying;
     if (moving && !isPlaying) {
       this.chibiSprite.play(this.chibiAnimKey);
@@ -233,7 +250,7 @@ export class Enemy extends Phaser.GameObjects.Container {
   // Update the procedural ground shadow: anchor x to the enemy, keep y at
   // groundY, and shrink + fade as altitude increases so a thrown knight
   // visually "drifts up" while a small landing dot stays on the ground.
-  protected updateGroundShadow(): void {
+  updateGroundShadow(): void {
     if (!this.groundShadow.visible) return;
     this.groundShadow.x = this.x;
     this.groundShadow.y = this.groundY - 2;
