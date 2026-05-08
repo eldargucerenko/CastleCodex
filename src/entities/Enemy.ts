@@ -6,9 +6,20 @@ import type { Castle } from './Castle';
 import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 // Animated walk-cycle key per enemy kind. Animations are created in
-// BootScene; missing entries fall back to the static SPRITE_BY_KIND map.
+// BootScene from the `*_walk_strip.png` sprite sheets (8 frames at
+// 256x256 each). Missing entries fall back to the static SPRITE_BY_KIND.
 const ANIMATED_BY_KIND: Partial<Record<EnemyKind, string>> = {
-  basic: 'enemy-knight-walk'
+  basic: 'enemy-knight-walk',
+  archer: 'enemy-archer-walk',
+  bomber: 'enemy-bomber-walk',
+  jumper: 'enemy-jumper-walk',
+  raider: 'enemy-raider-walk',
+  fat: 'enemy-heavy-knight-walk',
+  trunk: 'enemy-log-thrower-walk',
+  wizard: 'enemy-wizard-walk',
+  wizard_easy: 'enemy-wizard-walk',
+  wizard_medium: 'enemy-wizard-walk',
+  wizard_hard: 'enemy-wizard-walk'
 };
 
 // Chibi sprite key for each enemy kind (loaded by BootScene). Wizard variants
