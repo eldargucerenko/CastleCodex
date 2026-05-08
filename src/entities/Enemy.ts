@@ -7,7 +7,7 @@ import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 // Animated walk-cycle key per enemy kind. Animations are created in
 // BootScene from the `*_walk_strip.png` sprite sheets (8 frames at
-// 256x256 each). Missing entries fall back to the static SPRITE_BY_KIND.
+// 256x256 each). Wizard variants share the base wizard walk.
 const ANIMATED_BY_KIND: Partial<Record<EnemyKind, string>> = {
   basic: 'enemy-knight-walk',
   archer: 'enemy-archer-walk',
@@ -20,23 +20,6 @@ const ANIMATED_BY_KIND: Partial<Record<EnemyKind, string>> = {
   wizard_easy: 'enemy-wizard-walk',
   wizard_medium: 'enemy-wizard-walk',
   wizard_hard: 'enemy-wizard-walk'
-};
-
-// Chibi sprite key for each enemy kind (loaded by BootScene). Wizard variants
-// share the base wizard art. fat is the "tosses other knights" enemy and
-// reads better as a big armored knight; trunk uses the log-carrier sprite.
-const SPRITE_BY_KIND: Partial<Record<EnemyKind, string>> = {
-  basic: 'enemy-knight',
-  archer: 'enemy-archer',
-  bomber: 'enemy-bomber',
-  jumper: 'enemy-jumper',
-  raider: 'enemy-raider',
-  fat: 'enemy-heavy-knight',
-  trunk: 'enemy-log-thrower',
-  wizard: 'enemy-wizard',
-  wizard_easy: 'enemy-wizard',
-  wizard_medium: 'enemy-wizard',
-  wizard_hard: 'enemy-wizard'
 };
 
 export class Enemy extends Phaser.GameObjects.Container {
@@ -103,28 +86,17 @@ export class Enemy extends Phaser.GameObjects.Container {
   // leftward toward the castle.
   private maybeAttachChibiSprite(): void {
     const animKey = ANIMATED_BY_KIND[this.kind];
-    if (animKey && this.scene.anims.exists(animKey)) {
-      this.attachSprite(animKey, /*animated*/ true);
-      return;
-    }
-    const key = SPRITE_BY_KIND[this.kind];
-    if (!key || !this.scene.textures.exists(key)) return;
-    this.attachSprite(key, /*animated*/ false);
-  }
-
-  private attachSprite(textureOrAnim: string, animated: boolean): void {
+    if (!animKey || !this.scene.anims.exists(animKey)) return;
     this.shape.setVisible(false);
     this.labelText.setVisible(false);
     const targetH = this.stats.radius * 4.2;
-    const sprite = this.scene.add.sprite(0, -this.stats.radius * 0.6, textureOrAnim);
+    const sprite = this.scene.add.sprite(0, -this.stats.radius * 0.6, animKey);
     const aspect = sprite.width / sprite.height;
     sprite.setDisplaySize(targetH * aspect, targetH);
     sprite.setFlipX(true);
-    if (animated) {
-      sprite.play(textureOrAnim);
-      this.chibiAnimKey = textureOrAnim;
-    }
+    sprite.play(animKey);
     this.chibiSprite = sprite;
+    this.chibiAnimKey = animKey;
     this.addAt(sprite, 0);
   }
 

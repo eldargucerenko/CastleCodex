@@ -27,32 +27,32 @@ function getAssetBasePath(): string {
   return './';
 }
 
-// Chibi sprite filenames for the debug panel. `basic` keeps the existing
-// animated knight frame; the other kinds reuse the chibi PNGs we ship for
-// the in-game sprites so the cheat panel matches what gets spawned.
-const CHIBI_SPRITE_BY_KIND: Partial<Record<EnemyKind, string>> = {
-  basic: 'enemies/knight.png',
-  archer: 'enemies/archer.png',
-  bomber: 'enemies/bomber.png',
-  jumper: 'enemies/hammerman.png',
-  raider: 'enemies/raider.png',
-  fat: 'enemies/heavy_knight.png',
-  trunk: 'enemies/log_thrower.png',
-  wizard: 'enemies/wizard.png',
-  wizard_easy: 'enemies/wizard.png',
-  wizard_medium: 'enemies/wizard.png',
-  wizard_hard: 'enemies/wizard.png'
+// Walk-strip filename per kind. The cheat panel renders frame 0 of each
+// strip via CSS background-position so we don't have to ship duplicate
+// static PNGs. Strips are 2048x256 with 8 frames at 256x256.
+const WALK_STRIP_BY_KIND: Partial<Record<EnemyKind, string>> = {
+  basic: 'enemies/knight_walk_strip.png',
+  archer: 'enemies/archer_walk_strip.png',
+  bomber: 'enemies/bomber_walk_strip.png',
+  jumper: 'enemies/hammerman_walk_strip.png',
+  raider: 'enemies/raider_walk_strip.png',
+  fat: 'enemies/heavy_knight_walk_strip.png',
+  trunk: 'enemies/log_thrower_walk_strip.png',
+  wizard: 'enemies/wizard_walk_strip.png',
+  wizard_easy: 'enemies/wizard_walk_strip.png',
+  wizard_medium: 'enemies/wizard_walk_strip.png',
+  wizard_hard: 'enemies/wizard_walk_strip.png'
 };
 
 function buildIcon(kind: EnemyKind): HTMLSpanElement {
   const wrap = document.createElement('span');
   wrap.className = 'dbg-icon';
-  const spritePath = CHIBI_SPRITE_BY_KIND[kind];
-  if (spritePath) {
-    const img = document.createElement('img');
-    img.src = `${getAssetBasePath()}assets/${spritePath}`;
-    img.alt = kind;
-    wrap.appendChild(img);
+  const stripPath = WALK_STRIP_BY_KIND[kind];
+  if (stripPath) {
+    const slice = document.createElement('div');
+    slice.className = 'dbg-icon-slice';
+    slice.style.backgroundImage = `url(${getAssetBasePath()}assets/${stripPath})`;
+    wrap.appendChild(slice);
     return wrap;
   }
   wrap.appendChild(buildStickFigureSvg(kind));
@@ -197,6 +197,12 @@ export class DebugPanelUI {
       }
       .dbg-icon svg { overflow: visible; }
       .dbg-icon img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+      .dbg-icon-slice {
+        width: 100%; height: 100%;
+        background-size: 800% 100%;
+        background-position: 0% 0%;
+        background-repeat: no-repeat;
+      }
       .dbg-spawn-grid button { display: flex; align-items: center; gap: 6px; }
       .dbg-stat-row { display: flex; align-items: center; gap: 4px; margin: 3px 0; }
       .dbg-stat-row .dbg-kind {
