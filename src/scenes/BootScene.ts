@@ -40,7 +40,7 @@ export class BootScene extends Phaser.Scene {
       this.load.spritesheet(
         key,
         `${assetBasePath}assets/enemies/${name}_walk_strip.png`,
-        { frameWidth: 262, frameHeight: 262 }
+        { frameWidth: 256, frameHeight: 256 }
       );
     }
   }
