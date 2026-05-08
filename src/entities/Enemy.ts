@@ -55,6 +55,8 @@ export class Enemy extends Phaser.GameObjects.Container {
   readonly groundY: number;
   protected shape: Phaser.GameObjects.Graphics;
   protected labelText: Phaser.GameObjects.Text;
+  protected chibiSprite?: Phaser.GameObjects.Sprite;
+  protected chibiAnimKey?: string;
   protected statusText: Phaser.GameObjects.Text;
   protected hpBar: Phaser.GameObjects.Rectangle;
   protected hpBack: Phaser.GameObjects.Rectangle;
@@ -106,8 +108,30 @@ export class Enemy extends Phaser.GameObjects.Container {
     const aspect = sprite.width / sprite.height;
     sprite.setDisplaySize(targetH * aspect, targetH);
     sprite.setFlipX(true);
-    if (animated) sprite.play(textureOrAnim);
+    if (animated) {
+      sprite.play(textureOrAnim);
+      this.chibiAnimKey = textureOrAnim;
+    }
+    this.chibiSprite = sprite;
     this.addAt(sprite, 0);
+  }
+
+  // Resume the walk animation when the enemy is moving along the ground;
+  // freeze on frame 0 (idle stance) when stopped (attacking, grabbed, dying,
+  // tutorial-paused). Called every tick from updateEnemy and overrides.
+  protected updateWalkAnimation(): void {
+    if (!this.chibiSprite || !this.chibiAnimKey) return;
+    const moving =
+      (this.state === 'WalkToCastle' || this.state === 'WalkToRange') &&
+      !this.walkPaused &&
+      !this.isGrabbed;
+    const isPlaying = this.chibiSprite.anims.isPlaying;
+    if (moving && !isPlaying) {
+      this.chibiSprite.play(this.chibiAnimKey);
+    } else if (!moving && isPlaying) {
+      this.chibiSprite.anims.stop();
+      this.chibiSprite.setFrame(0);
+    }
   }
 
   get canBeGrabbed(): boolean {
@@ -189,9 +213,13 @@ export class Enemy extends Phaser.GameObjects.Container {
   }
 
   updateEnemy(time: number, delta: number, castle: Castle, _enemies: Enemy[] = []): void {
-    if (this.state === 'Dead' || this.state === 'Grabbed') return;
+    if (this.state === 'Dead' || this.state === 'Grabbed') {
+      this.updateWalkAnimation();
+      return;
+    }
     if (this.state === 'Flying' || this.state === 'Stunned') {
       this.updateFlying(delta, castle);
+      this.updateWalkAnimation();
       return;
     }
 
@@ -203,17 +231,20 @@ export class Enemy extends Phaser.GameObjects.Container {
         this.lastAttackAt = time;
         castle.takeDamage(this.stats.attackDamage);
       }
+      this.updateWalkAnimation();
       return;
     }
 
     this.state = 'WalkToCastle';
     if (this.walkPaused) {
       this.refreshDepth();
+      this.updateWalkAnimation();
       return;
     }
     const slow = time < this.isSlowedUntil ? 0.45 : 1;
     this.x -= this.stats.speed * slow * (delta / 1000);
     this.refreshDepth();
+    this.updateWalkAnimation();
   }
 
   protected updateFlying(delta: number, castle: Castle): void {
