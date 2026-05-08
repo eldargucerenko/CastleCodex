@@ -60,6 +60,7 @@ export class Enemy extends Phaser.GameObjects.Container {
   protected statusText: Phaser.GameObjects.Text;
   protected hpBar: Phaser.GameObjects.Rectangle;
   protected hpBack: Phaser.GameObjects.Rectangle;
+  protected groundShadow: Phaser.GameObjects.Ellipse;
 
   constructor(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind, groundY?: number) {
     super(scene, x, y);
@@ -67,6 +68,15 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.stats = DebugCheatSystem.applyTo(ENEMY_STATS[kind]);
     this.hp = this.stats.hp;
     this.groundY = groundY ?? LOGICAL_H - 72;
+
+    // Procedural ground shadow lives outside the container so it stays at
+    // groundY when the enemy is launched into the air. Its alpha and size
+    // ease as the enemy gains altitude (drawn via updateGroundShadow).
+    const shadowW = this.stats.radius * 2.6;
+    const shadowH = Math.max(4, this.stats.radius * 0.7);
+    this.groundShadow = scene.add
+      .ellipse(x, this.groundY - 2, shadowW, shadowH, 0x000000, 0.32)
+      .setDepth(2);
 
     this.shape = scene.add.graphics();
     this.labelText = scene.add.text(0, 0, this.stats.label, { color: '#ffffff', fontSize: '12px', fontStyle: 'bold' }).setOrigin(0.5);
@@ -210,16 +220,40 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.justDied = true;
     this.visible = false;
     this.active = false;
+    this.groundShadow.setVisible(false);
+  }
+
+  // The ground shadow lives outside the container so we have to clean it up
+  // explicitly when the Enemy is destroyed by GameScene.collectDeadEnemies.
+  override destroy(fromScene?: boolean): void {
+    this.groundShadow.destroy();
+    super.destroy(fromScene);
+  }
+
+  // Update the procedural ground shadow: anchor x to the enemy, keep y at
+  // groundY, and shrink + fade as altitude increases so a thrown knight
+  // visually "drifts up" while a small landing dot stays on the ground.
+  protected updateGroundShadow(): void {
+    if (!this.groundShadow.visible) return;
+    this.groundShadow.x = this.x;
+    this.groundShadow.y = this.groundY - 2;
+    const altitude = Math.max(0, this.groundY - this.stats.radius - this.y);
+    const heightFactor = Math.min(1, altitude / 220);
+    const scale = 1 - 0.5 * heightFactor;
+    this.groundShadow.setScale(scale);
+    this.groundShadow.setAlpha(0.32 * (1 - 0.6 * heightFactor));
   }
 
   updateEnemy(time: number, delta: number, castle: Castle, _enemies: Enemy[] = []): void {
     if (this.state === 'Dead' || this.state === 'Grabbed') {
       this.updateWalkAnimation();
+      this.updateGroundShadow();
       return;
     }
     if (this.state === 'Flying' || this.state === 'Stunned') {
       this.updateFlying(delta, castle);
       this.updateWalkAnimation();
+      this.updateGroundShadow();
       return;
     }
 
@@ -232,6 +266,7 @@ export class Enemy extends Phaser.GameObjects.Container {
         castle.takeDamage(this.stats.attackDamage);
       }
       this.updateWalkAnimation();
+      this.updateGroundShadow();
       return;
     }
 
@@ -239,6 +274,7 @@ export class Enemy extends Phaser.GameObjects.Container {
     if (this.walkPaused) {
       this.refreshDepth();
       this.updateWalkAnimation();
+      this.updateGroundShadow();
       return;
     }
     const slow = time < this.isSlowedUntil ? 0.45 : 1;
