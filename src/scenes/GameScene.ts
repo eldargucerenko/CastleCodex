@@ -36,6 +36,7 @@ export class GameScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
   private enemiesText!: Phaser.GameObjects.Text;
   private hpBar?: ReturnType<typeof makeBar>;
+  private redrawSoundIcon?: (muted: boolean) => void;
   private saveAtLevelStart?: SaveData;
   private hasTemporaryLevelOneArcher = false;
   private hasTemporaryLevelOneMage = false;
@@ -92,6 +93,9 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ESC', () => this.openPauseMenu());
     this.events.on(Phaser.Scenes.Events.RESUME, () => {
       if (!this.finishing) gameplayStart();
+      // Sync the HUD sound icon with whatever the pause menu may have
+      // toggled while we were paused.
+      this.redrawSoundIcon?.(PauseMenuScene.loadMuted());
     });
   }
 
@@ -387,6 +391,7 @@ export class GameScene extends Phaser.Scene {
       }
     };
     draw(PauseMenuScene.loadMuted());
+    this.redrawSoundIcon = draw;
 
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerover', () => bg.setFillStyle(COLORS.parchment100));

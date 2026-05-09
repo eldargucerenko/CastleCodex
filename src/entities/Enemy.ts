@@ -162,6 +162,16 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.chibiSprite.play(animKey);
   }
 
+  // Hard cancel whatever's playing and freeze on a neutral idle frame.
+  // Used when the enemy enters a state we don't have art for (Grabbed,
+  // Dead) -- otherwise the previous strike / walk would keep playing.
+  protected cancelChibiAnim(): void {
+    if (!this.chibiSprite) return;
+    this.oneShotPlaying = false;
+    this.chibiSprite.anims.stop();
+    this.chibiSprite.setFrame(0);
+  }
+
   get canBeGrabbed(): boolean {
     if (this.state === 'Dead' || this.state === 'Grabbed') return false;
     if (this.kind.startsWith('wizard') && (this.wizardState === 'Shielded' || this.wizardState === 'Unlocking')) return false;

@@ -36,18 +36,25 @@ export class BasicEnemy extends Enemy {
       this.playOneShotAnim(key);
     }
 
-    // State-driven anim swaps.
+    // State-driven anim swaps. Each transition cancels whatever was playing
+    // (strike mid-swing, walk loop, etc.) so the new state's anim takes over
+    // immediately instead of waiting for the previous one-shot to complete.
     if (this.state !== this.prevState) {
       if (this.state === 'Flying') {
         this.playLoopAnim(KNIGHT_AIR);
       } else if (this.state === 'Stunned') {
         this.playOneShotAnim(KNIGHT_GETUP);
+      } else if (this.state === 'Grabbed' || this.state === 'Dead') {
+        this.cancelChibiAnim();
       } else if (
         (this.state === 'WalkToCastle' || this.state === 'AttackCastle') &&
-        (this.prevState === 'Flying' || this.prevState === 'Stunned') &&
+        this.prevState !== 'WalkToCastle' &&
+        this.prevState !== 'AttackCastle' &&
         this.chibiAnimKey
       ) {
-        // Just recovered from a flight/stun: resume the regular walk loop.
+        // Recovered from a non-walking state (Flying / Stunned / Grabbed):
+        // resume the regular walk loop. updateWalkAnimation will then
+        // pause/resume frame 0 based on actual movement.
         this.playLoopAnim(this.chibiAnimKey);
       }
       this.prevState = this.state;
