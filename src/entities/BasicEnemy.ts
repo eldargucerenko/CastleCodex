@@ -12,8 +12,6 @@ const KNIGHT_STRIKES = ['enemy-knight-strike1', 'enemy-knight-strike2'] as const
 
 export class BasicEnemy extends Enemy {
   private prevState: EnemyState = 'Spawn';
-  private prevAttackAt = 0;
-  private nextStrikeIdx = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, groundY?: number) {
     super(scene, x, y, 'basic', groundY);
@@ -29,10 +27,12 @@ export class BasicEnemy extends Enemy {
     const beforeAttackAt = this.lastAttackAt;
     super.updateEnemy(time, delta, castle, enemies);
 
-    // Sword swing on each landed attack tick. Alternates strike1/strike2.
+    // Sword swing on each landed attack tick. Picks strike1 or strike2 at
+    // random so multiple knights attacking at the same time don't sync up
+    // and so we don't depend on a per-instance counter that was apparently
+    // sticking on strike2 in some runs.
     if (this.state === 'AttackCastle' && this.lastAttackAt !== beforeAttackAt) {
-      const key = KNIGHT_STRIKES[this.nextStrikeIdx];
-      this.nextStrikeIdx = (this.nextStrikeIdx + 1) % KNIGHT_STRIKES.length;
+      const key = KNIGHT_STRIKES[Math.random() < 0.5 ? 0 : 1];
       this.playOneShotAnim(key);
     }
 
