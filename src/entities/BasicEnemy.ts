@@ -39,11 +39,11 @@ export class BasicEnemy extends Enemy {
     // State-driven anim swaps. Each transition cancels whatever was playing
     // (strike mid-swing, walk loop, etc.) so the new state's anim takes over
     // immediately instead of waiting for the previous one-shot to complete.
+    // Note: Stunned doesn't need its own branch -- onGroundHit already
+    // played getup the moment the knight first touched ground.
     if (this.state !== this.prevState) {
       if (this.state === 'Flying') {
         this.playLoopAnim(KNIGHT_AIR);
-      } else if (this.state === 'Stunned') {
-        this.playOneShotAnim(KNIGHT_GETUP);
       } else if (this.state === 'Grabbed' || this.state === 'Dead') {
         this.cancelChibiAnim();
       } else if (
@@ -59,6 +59,13 @@ export class BasicEnemy extends Enemy {
       }
       this.prevState = this.state;
     }
+  }
+
+  protected override onGroundHit(_impactSpeed: number): void {
+    // First time the knight touches ground after being launched: stop the
+    // air-panic loop and play the getup animation immediately, instead of
+    // waiting for the bounces to settle and Stunned to fire.
+    this.playOneShotAnim(KNIGHT_GETUP);
   }
 
   override takeDamage(amount: number): boolean {

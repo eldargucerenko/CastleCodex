@@ -47,6 +47,7 @@ export class Enemy extends Phaser.GameObjects.Container {
   protected lastWalkX = 0;
   protected lastWalkY = 0;
   protected oneShotPlaying = false;
+  protected groundedThisFlight = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind, groundY?: number) {
     super(scene, x, y);
@@ -218,6 +219,9 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.state = 'Flying';
     this.vx = vx;
     this.vy = vy;
+    // Reset so the next ground touch fires onGroundHit again -- otherwise
+    // a re-thrown enemy would never re-trigger its landing animation.
+    this.groundedThisFlight = false;
     this.setScale(1);
     this.setDepth(10);
     this.refreshDepth();
@@ -229,6 +233,11 @@ export class Enemy extends Phaser.GameObjects.Container {
       repeat: 1
     });
   }
+
+  // Subclass hook: fires once the first time this enemy touches ground while
+  // in the Flying state. impactSpeed is the absolute vy at contact. Default
+  // is a no-op; BasicEnemy overrides to swap to the getup animation.
+  protected onGroundHit(_impactSpeed: number): void {}
 
   takeDamage(amount: number): boolean {
     if (this.state === 'Dead') return false;
@@ -346,6 +355,10 @@ export class Enemy extends Phaser.GameObjects.Container {
         this.takeDamage(damage);
         this.scene.cameras.main.shake(Math.min(160, impactSpeed / 6), Math.min(0.0035, impactSpeed / 200000));
         this.spawnImpact();
+      }
+      if (!this.groundedThisFlight) {
+        this.groundedThisFlight = true;
+        this.onGroundHit(impactSpeed);
       }
       this.vy *= -0.34;
       this.vx *= 0.72;
