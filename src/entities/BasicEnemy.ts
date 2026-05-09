@@ -42,9 +42,11 @@ export class BasicEnemy extends Enemy {
     // Note: Stunned doesn't need its own branch -- onGroundHit already
     // played getup the moment the knight first touched ground.
     if (this.state !== this.prevState) {
-      if (this.state === 'Flying') {
+      if (this.state === 'Flying' || this.state === 'Grabbed') {
+        // Same panic loop while dangling in the player's hand and while
+        // flying through the air -- both read as "the knight is not happy".
         this.playLoopAnim(KNIGHT_AIR);
-      } else if (this.state === 'Grabbed' || this.state === 'Dead') {
+      } else if (this.state === 'Dead') {
         this.cancelChibiAnim();
       } else if (
         (this.state === 'WalkToCastle' || this.state === 'AttackCastle') &&

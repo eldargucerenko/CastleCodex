@@ -47,6 +47,7 @@ export class Enemy extends Phaser.GameObjects.Container {
   protected lastWalkX = 0;
   protected lastWalkY = 0;
   protected oneShotPlaying = false;
+  protected oneShotCompleteHandler?: () => void;
   protected groundedThisFlight = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind, groundY?: number) {
@@ -143,31 +144,46 @@ export class Enemy extends Phaser.GameObjects.Container {
     }
   }
 
+  // Drop any pending one-shot completion handler so it can't fire later
+  // against an unrelated animation and prematurely flip oneShotPlaying off.
+  private clearOneShotHandler(): void {
+    if (this.chibiSprite && this.oneShotCompleteHandler) {
+      this.chibiSprite.off(Phaser.Animations.Events.ANIMATION_COMPLETE, this.oneShotCompleteHandler);
+    }
+    this.oneShotCompleteHandler = undefined;
+  }
+
   // Play a one-shot animation on the chibi sprite (strike, hurt, getup).
   // updateWalkAnimation defers while it's playing; on completion the walk
   // anim resumes automatically next tick.
   protected playOneShotAnim(animKey: string): void {
     if (!this.chibiSprite || !this.scene.anims.exists(animKey)) return;
+    this.clearOneShotHandler();
     this.oneShotPlaying = true;
     this.chibiSprite.play({ key: animKey, repeat: 0 });
-    this.chibiSprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+    const handler = () => {
       this.oneShotPlaying = false;
-    });
+      this.oneShotCompleteHandler = undefined;
+    };
+    this.oneShotCompleteHandler = handler;
+    this.chibiSprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, handler);
   }
 
   // Switch the persistent looping animation (e.g. swap walk for an "in air"
   // panic loop while flying). Stays playing until something else replaces it.
   protected playLoopAnim(animKey: string): void {
     if (!this.chibiSprite || !this.scene.anims.exists(animKey)) return;
+    this.clearOneShotHandler();
     this.oneShotPlaying = false;
     this.chibiSprite.play(animKey);
   }
 
   // Hard cancel whatever's playing and freeze on a neutral idle frame.
-  // Used when the enemy enters a state we don't have art for (Grabbed,
-  // Dead) -- otherwise the previous strike / walk would keep playing.
+  // Used when the enemy enters a state we don't have art for (Dead) --
+  // otherwise the previous strike / walk would keep playing.
   protected cancelChibiAnim(): void {
     if (!this.chibiSprite) return;
+    this.clearOneShotHandler();
     this.oneShotPlaying = false;
     this.chibiSprite.anims.stop();
     this.chibiSprite.setFrame(0);
