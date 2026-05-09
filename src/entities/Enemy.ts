@@ -46,6 +46,7 @@ export class Enemy extends Phaser.GameObjects.Container {
   protected groundShadow: Phaser.GameObjects.Ellipse;
   protected lastWalkX = 0;
   protected lastWalkY = 0;
+  protected oneShotPlaying = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind, groundY?: number) {
     super(scene, x, y);
@@ -106,6 +107,14 @@ export class Enemy extends Phaser.GameObjects.Container {
   // still freeze correctly when their state stops moving them.
   updateWalkAnimation(): void {
     if (!this.chibiSprite || !this.chibiAnimKey) return;
+    // Defer to one-shot / state-driven anims while they're playing.
+    const currentKey = this.chibiSprite.anims.currentAnim?.key;
+    if (this.oneShotPlaying || (currentKey && currentKey !== this.chibiAnimKey && this.chibiSprite.anims.isPlaying)) {
+      // Still update last-pos so we don't "jump" when the override ends.
+      this.lastWalkX = this.x;
+      this.lastWalkY = this.y;
+      return;
+    }
     const dx = this.x - this.lastWalkX;
     const dy = this.y - this.lastWalkY;
     this.lastWalkX = this.x;
@@ -131,6 +140,26 @@ export class Enemy extends Phaser.GameObjects.Container {
       this.chibiSprite.anims.stop();
       this.chibiSprite.setFrame(0);
     }
+  }
+
+  // Play a one-shot animation on the chibi sprite (strike, hurt, getup).
+  // updateWalkAnimation defers while it's playing; on completion the walk
+  // anim resumes automatically next tick.
+  protected playOneShotAnim(animKey: string): void {
+    if (!this.chibiSprite || !this.scene.anims.exists(animKey)) return;
+    this.oneShotPlaying = true;
+    this.chibiSprite.play({ key: animKey, repeat: 0 });
+    this.chibiSprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      this.oneShotPlaying = false;
+    });
+  }
+
+  // Switch the persistent looping animation (e.g. swap walk for an "in air"
+  // panic loop while flying). Stays playing until something else replaces it.
+  protected playLoopAnim(animKey: string): void {
+    if (!this.chibiSprite || !this.scene.anims.exists(animKey)) return;
+    this.oneShotPlaying = false;
+    this.chibiSprite.play(animKey);
   }
 
   get canBeGrabbed(): boolean {

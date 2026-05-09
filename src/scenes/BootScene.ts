@@ -29,6 +29,22 @@ export class BootScene extends Phaser.Scene {
         { frameWidth: 256, frameHeight: 256 }
       );
     }
+    // Knight-only extras: strike1/2 (alternating sword swings), hurt (damage
+    // flinch), air_panic (mid-flight loop), getup (after a stunned landing).
+    const knightExtras: Array<[string, string]> = [
+      ['enemy-knight-strike1', 'knight_strike1'],
+      ['enemy-knight-strike2', 'knight_strike2'],
+      ['enemy-knight-hurt', 'knight_hurt'],
+      ['enemy-knight-air', 'knight_air_panic'],
+      ['enemy-knight-getup', 'knight_getup']
+    ];
+    for (const [key, name] of knightExtras) {
+      this.load.spritesheet(
+        key,
+        `${assetBasePath}assets/enemies/${name}_strip.png`,
+        { frameWidth: 256, frameHeight: 256 }
+      );
+    }
   }
 
   async create(): Promise<void> {
@@ -49,6 +65,26 @@ export class BootScene extends Phaser.Scene {
           frames: this.anims.generateFrameNumbers(key, { start: 0, end: WALK_LAST_FRAME }),
           frameRate: 8,
           repeat: -1
+        });
+      }
+    }
+
+    // Knight-only one-shot / loop animations.
+    type KnightAnim = { key: string; frameRate: number; repeat: number };
+    const knightAnims: KnightAnim[] = [
+      { key: 'enemy-knight-strike1', frameRate: 14, repeat: 0 },
+      { key: 'enemy-knight-strike2', frameRate: 14, repeat: 0 },
+      { key: 'enemy-knight-hurt', frameRate: 14, repeat: 0 },
+      { key: 'enemy-knight-air', frameRate: 10, repeat: -1 },
+      { key: 'enemy-knight-getup', frameRate: 10, repeat: 0 }
+    ];
+    for (const { key, frameRate, repeat } of knightAnims) {
+      if (this.textures.exists(key) && !this.anims.exists(key)) {
+        this.anims.create({
+          key,
+          frames: this.anims.generateFrameNumbers(key, { start: 0, end: 7 }),
+          frameRate,
+          repeat
         });
       }
     }
