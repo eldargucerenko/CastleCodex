@@ -115,8 +115,12 @@ export class GameScene extends Phaser.Scene {
     this.unsubscribePause = subscribeSdkPause((paused) => {
       if (paused) {
         gameplayStop();
-        this.scene.pause();
+        if (!this.scene.isPaused()) this.scene.pause();
       } else {
+        // Don't auto-resume if the player has the in-game pause menu up --
+        // an SDK resume (e.g. ad finished) would otherwise unpause the game
+        // underneath the menu and let waves keep running while paused.
+        if (this.scene.isActive('PauseMenuScene')) return;
         this.scene.resume();
         gameplayStart();
       }
