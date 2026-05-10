@@ -88,9 +88,9 @@ export class GameScene extends Phaser.Scene {
     });
     this.wireSdkLifecycle();
     this.wirePauseMenu();
-    // Baseline cursor for the gameplay scene -- "grab" reads as "you can
-    // pick something up". DragThrowSystem swaps to "grabbing" on hold.
-    this.input.setDefaultCursor('grab');
+    // Cursor stays as the OS default in normal play; only the
+    // CursorDebuff swaps it to "not-allowed".
+    this.input.setDefaultCursor('default');
     this.wireCursorOverlay();
   }
 
@@ -116,7 +116,7 @@ export class GameScene extends Phaser.Scene {
       this.input.setDefaultCursor('not-allowed');
       this.cursorDebuffActive = true;
     } else if (!active && this.cursorDebuffActive) {
-      this.input.setDefaultCursor('grab');
+      this.input.setDefaultCursor('default');
       this.cursorDebuffActive = false;
     }
   }

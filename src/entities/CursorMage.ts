@@ -5,7 +5,7 @@ import type { Castle } from './Castle';
 import { Enemy } from './Enemy';
 
 const STOP_X = LOGICAL_W * 0.5;
-const CAST_INTERVAL_MS = 4000;
+const CAST_INTERVAL_MS = 9000;
 const DEBUFF_DURATION_MS = 3000; // 3-second grab block per cast.
 
 // Debug-only mage that walks to half-map then sits there casting a recurring
