@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ENEMY_STATS } from '../data/enemies';
+import { CursorDebuff } from '../systems/CursorDebuff';
 import { DebugCheatSystem } from '../systems/DebugCheatSystem';
 import type { EnemyKind, EnemyState, EnemyStats, WizardState } from '../types/game';
 import type { Castle } from './Castle';
@@ -19,7 +20,8 @@ const ANIMATED_BY_KIND: Partial<Record<EnemyKind, string>> = {
   wizard: 'enemy-wizard-walk',
   wizard_easy: 'enemy-wizard-walk',
   wizard_medium: 'enemy-wizard-walk',
-  wizard_hard: 'enemy-wizard-walk'
+  wizard_hard: 'enemy-wizard-walk',
+  cursor_mage: 'enemy-wizard-walk'
 };
 
 export class Enemy extends Phaser.GameObjects.Container {
@@ -215,7 +217,9 @@ export class Enemy extends Phaser.GameObjects.Container {
 
   followPointer(x: number, y: number): void {
     const liftPenalty = y < this.y ? 0.68 / this.stats.mass : 1;
-    const follow = this.stats.dragFollow;
+    // CursorDebuff multiplier (set by CursorMage etc.) makes the dragged
+    // enemy snap to the pointer slower while a debuff is active. Default 1.
+    const follow = this.stats.dragFollow * CursorDebuff.factor(this.scene.time.now);
     this.x += (x - this.x) * follow;
     this.y += (y - this.y) * follow * liftPenalty;
   }

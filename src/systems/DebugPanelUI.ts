@@ -41,7 +41,8 @@ const WALK_STRIP_BY_KIND: Partial<Record<EnemyKind, string>> = {
   wizard: 'enemies/wizard_walk_strip.png',
   wizard_easy: 'enemies/wizard_walk_strip.png',
   wizard_medium: 'enemies/wizard_walk_strip.png',
-  wizard_hard: 'enemies/wizard_walk_strip.png'
+  wizard_hard: 'enemies/wizard_walk_strip.png',
+  cursor_mage: 'enemies/wizard_walk_strip.png'
 };
 
 function buildIcon(kind: EnemyKind): HTMLSpanElement {

@@ -131,6 +131,24 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
     color: 0x7c3f1d,
     label: 'T'
   },
+  // Test/cheat-only enemy: walks to half-map and casts a debuff that drops
+  // the drag-throw "follow" factor so the cursor feels laggy/heavy. Not in
+  // any level wave -- spawn from the debug panel.
+  cursor_mage: {
+    kind: 'cursor_mage',
+    hp: 80,
+    speed: 38,
+    attackDamage: 0,
+    attackRateMs: 1800,
+    radius: 16,
+    mass: 1.31,
+    dragFollow: 0.37,
+    throwMultiplier: 0.51,
+    killReward: 12,
+    collisionDamageFactor: 0.045,
+    color: 0x7c3aed,
+    label: 'CM'
+  },
   wizard: {
     kind: 'wizard',
     hp: 64,

@@ -10,7 +10,8 @@ export type EnemyKind =
   | 'bomber'
   | 'raider'
   | 'jumper'
-  | 'trunk';
+  | 'trunk'
+  | 'cursor_mage';
 
 export type EnemyState =
   | 'Spawn'
