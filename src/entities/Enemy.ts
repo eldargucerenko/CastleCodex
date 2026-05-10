@@ -23,6 +23,53 @@ const ANIMATED_BY_KIND: Partial<Record<EnemyKind, string>> = {
   cursor_mage: 'enemy-wizard-walk'
 };
 
+// Per-kind animation extras for state-driven anim swaps + attack strikes.
+// The base prefix matches ANIMATED_BY_KIND (drop the trailing -walk).
+interface AnimExtras {
+  air?: string;
+  getup?: string;
+  hurt?: string;
+  strikes?: string[];
+}
+const EXTRAS_BY_KIND: Partial<Record<EnemyKind, AnimExtras>> = {
+  basic: {
+    air: 'enemy-knight-air', getup: 'enemy-knight-getup', hurt: 'enemy-knight-hurt',
+    strikes: ['enemy-knight-strike1', 'enemy-knight-strike2']
+  },
+  archer: {
+    air: 'enemy-archer-air', getup: 'enemy-archer-getup', hurt: 'enemy-archer-hurt',
+    strikes: ['enemy-archer-strike2']
+  },
+  bomber: {
+    air: 'enemy-bomber-air', getup: 'enemy-bomber-getup', hurt: 'enemy-bomber-hurt',
+    strikes: ['enemy-bomber-strike1', 'enemy-bomber-strike2']
+  },
+  raider: {
+    air: 'enemy-raider-air', getup: 'enemy-raider-getup', hurt: 'enemy-raider-hurt',
+    strikes: ['enemy-raider-strike1', 'enemy-raider-strike2']
+  },
+  jumper: {
+    air: 'enemy-jumper-air', getup: 'enemy-jumper-getup', hurt: 'enemy-jumper-hurt',
+    strikes: ['enemy-jumper-strike1', 'enemy-jumper-strike2']
+  },
+  fat: {
+    air: 'enemy-heavy-knight-air', getup: 'enemy-heavy-knight-getup', hurt: 'enemy-heavy-knight-hurt',
+    strikes: ['enemy-heavy-knight-strike1', 'enemy-heavy-knight-strike2']
+  },
+  trunk: {
+    air: 'enemy-log-thrower-air', getup: 'enemy-log-thrower-getup', hurt: 'enemy-log-thrower-hurt',
+    strikes: ['enemy-log-thrower-strike1', 'enemy-log-thrower-strike2']
+  },
+  wizard: {
+    air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt',
+    strikes: ['enemy-wizard-strike1', 'enemy-wizard-strike2']
+  },
+  wizard_easy:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1', 'enemy-wizard-strike2'] },
+  wizard_medium: { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1', 'enemy-wizard-strike2'] },
+  wizard_hard:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1', 'enemy-wizard-strike2'] },
+  cursor_mage:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1', 'enemy-wizard-strike2'] }
+};
+
 export class Enemy extends Phaser.GameObjects.Container {
   readonly stats: EnemyStats;
   readonly kind: EnemyKind;
@@ -50,6 +97,7 @@ export class Enemy extends Phaser.GameObjects.Container {
   protected oneShotPlaying = false;
   protected oneShotCompleteHandler?: () => void;
   protected groundedThisFlight = false;
+  protected prevStateForAnims: EnemyState = 'Spawn';
 
   constructor(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind, groundY?: number) {
     super(scene, x, y);
@@ -251,10 +299,45 @@ export class Enemy extends Phaser.GameObjects.Container {
     });
   }
 
-  // Subclass hook: fires once the first time this enemy touches ground while
-  // in the Flying state. impactSpeed is the absolute vy at contact. Default
-  // is a no-op; BasicEnemy overrides to swap to the getup animation.
-  protected onGroundHit(_impactSpeed: number): void {}
+  // Hook fired once the first time this enemy touches ground while Flying.
+  // Default plays the kind's getup anim if one exists.
+  protected onGroundHit(_impactSpeed: number): void {
+    const extras = EXTRAS_BY_KIND[this.kind];
+    if (extras?.getup) this.playOneShotAnim(extras.getup);
+  }
+
+  // Public so subclasses can call from their attack/shoot ticks. Picks a
+  // random strike variant if multiple are configured for this kind.
+  triggerStrike(): void {
+    const strikes = EXTRAS_BY_KIND[this.kind]?.strikes;
+    if (!strikes || strikes.length === 0) return;
+    const key = strikes[Math.floor(Math.random() * strikes.length)];
+    this.playOneShotAnim(key);
+  }
+
+  // Called from GameScene each tick after updateEnemy. Reads the kind's
+  // EXTRAS map and swaps anims when state transitions warrant it.
+  updateStateAnimations(): void {
+    const extras = EXTRAS_BY_KIND[this.kind];
+    if (!extras) return;
+    if (this.state !== this.prevStateForAnims) {
+      if ((this.state === 'Flying' || this.state === 'Grabbed') && extras.air) {
+        this.playLoopAnim(extras.air);
+      } else if (this.state === 'Dead') {
+        this.cancelChibiAnim();
+      } else if (
+        (this.state === 'WalkToCastle' || this.state === 'AttackCastle' || this.state === 'WalkToRange' || this.state === 'ShootCastle') &&
+        this.prevStateForAnims !== 'WalkToCastle' &&
+        this.prevStateForAnims !== 'AttackCastle' &&
+        this.prevStateForAnims !== 'WalkToRange' &&
+        this.prevStateForAnims !== 'ShootCastle' &&
+        this.chibiAnimKey
+      ) {
+        this.playLoopAnim(this.chibiAnimKey);
+      }
+      this.prevStateForAnims = this.state;
+    }
+  }
 
   takeDamage(amount: number): boolean {
     if (this.state === 'Dead') return false;
@@ -265,6 +348,12 @@ export class Enemy extends Phaser.GameObjects.Container {
       return true;
     }
     this.draw();
+    // Hurt anim (skipped while in air -- the air panic loop already reads
+    // as "I'm getting hit"). Each kind opts in via EXTRAS_BY_KIND.
+    if (this.state !== 'Flying' && this.state !== 'Stunned') {
+      const extras = EXTRAS_BY_KIND[this.kind];
+      if (extras?.hurt) this.playOneShotAnim(extras.hurt);
+    }
     return false;
   }
 
@@ -314,6 +403,7 @@ export class Enemy extends Phaser.GameObjects.Container {
       if (time - this.lastAttackAt > this.stats.attackRateMs) {
         this.lastAttackAt = time;
         castle.takeDamage(this.stats.attackDamage);
+        this.triggerStrike();
       }
       return;
     }

@@ -22,6 +22,7 @@ export class ArcherEnemy extends Enemy {
       this.state = 'ShootCastle';
       if (time - this.lastShotAt > (this.stats.projectileRateMs ?? 1500)) {
         this.lastShotAt = time;
+        this.triggerStrike();
         const defender = castle.getLivingDefenderTarget();
         if (defender) {
           new Projectile(this.scene, this.x, this.y - 6, defender.x, defender.y, 420, 0xffd166, () => {

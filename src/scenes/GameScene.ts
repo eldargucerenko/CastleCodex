@@ -253,6 +253,7 @@ export class GameScene extends Phaser.Scene {
 
     for (const enemy of this.enemies) {
       enemy.updateEnemy(time, delta, this.castle, this.enemies);
+      enemy.updateStateAnimations();
       enemy.updateWalkAnimation();
       enemy.updateGroundShadow();
     }

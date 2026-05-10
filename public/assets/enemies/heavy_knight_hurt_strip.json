@@ -1,0 +1,73 @@
+{
+  "sheet": "heavy_knight_hurt_strip.png",
+  "cell_size": 256,
+  "animation": "hurt",
+  "directions": 1,
+  "frames_per_dir": 8,
+  "frames": [
+    {
+      "direction": 0,
+      "frame": 0,
+      "x": 0,
+      "y": 0,
+      "w": 256,
+      "h": 256
+    },
+    {
+      "direction": 0,
+      "frame": 1,
+      "x": 256,
+      "y": 0,
+      "w": 256,
+      "h": 256
+    },
+    {
+      "direction": 0,
+      "frame": 2,
+      "x": 512,
+      "y": 0,
+      "w": 256,
+      "h": 256
+    },
+    {
+      "direction": 0,
+      "frame": 3,
+      "x": 768,
+      "y": 0,
+      "w": 256,
+      "h": 256
+    },
+    {
+      "direction": 0,
+      "frame": 4,
+      "x": 1024,
+      "y": 0,
+      "w": 256,
+      "h": 256
+    },
+    {
+      "direction": 0,
+      "frame": 5,
+      "x": 1280,
+      "y": 0,
+      "w": 256,
+      "h": 256
+    },
+    {
+      "direction": 0,
+      "frame": 6,
+      "x": 1536,
+      "y": 0,
+      "w": 256,
+      "h": 256
+    },
+    {
+      "direction": 0,
+      "frame": 7,
+      "x": 1792,
+      "y": 0,
+      "w": 256,
+      "h": 256
+    }
+  ]
+}

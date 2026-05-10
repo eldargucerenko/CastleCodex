@@ -49,6 +49,7 @@ export class WizardEnemy extends Enemy {
       this.state = 'ShootCastle';
       if (time - this.lastShotAt > (this.stats.projectileRateMs ?? 1600)) {
         this.lastShotAt = time;
+        this.triggerStrike();
         new Projectile(this.scene, this.x - 8, this.y - 10, castle.width + 14, this.y - 24, 390, 0xa855f7, () => {
           castle.takeDamage(this.stats.projectileDamage ?? 7);
         });

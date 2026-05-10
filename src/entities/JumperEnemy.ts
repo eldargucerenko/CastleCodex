@@ -31,6 +31,7 @@ export class JumperEnemy extends Enemy {
       if (time - this.lastAttackAt > this.stats.attackRateMs) {
         this.lastAttackAt = time;
         castle.takeDamage(this.stats.attackDamage);
+        this.triggerStrike();
       }
       return;
     }
