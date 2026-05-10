@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Castle } from '../entities/Castle';
 import type { Enemy } from '../entities/Enemy';
 import { WizardEnemy } from '../entities/WizardEnemy';
+import { CursorDebuff } from './CursorDebuff';
 
 interface PointerSample {
   x: number;
@@ -38,6 +39,15 @@ export class DragThrowSystem {
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
+    // CursorDebuff (cast by CursorMage) blocks all grab input for its
+    // duration. Wizard rune clicks still pass through -- they're a
+    // separate interaction than the drag-throw.
+    if (CursorDebuff.isActive(this.scene.time.now)) {
+      const runeWizard = this.findWizardRuneTarget(pointer.worldX, pointer.worldY);
+      if (runeWizard) runeWizard.tryRuneClick(pointer.worldX, pointer.worldY);
+      return;
+    }
+
     const runeWizard = this.findWizardRuneTarget(pointer.worldX, pointer.worldY);
     if (runeWizard) {
       runeWizard.tryRuneClick(pointer.worldX, pointer.worldY);

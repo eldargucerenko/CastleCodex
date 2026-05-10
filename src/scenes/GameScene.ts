@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Castle } from '../entities/Castle';
 import type { Enemy } from '../entities/Enemy';
 import { gameplayStart, gameplayStop, subscribeSdkPause, trackLevelStart } from '../sdk/gamepush';
+import { CursorDebuff } from '../systems/CursorDebuff';
 import { ArcherSystem } from '../systems/ArcherSystem';
 import { DebugPanelUI } from '../systems/DebugPanelUI';
 import { DragThrowSystem } from '../systems/DragThrowSystem';
@@ -87,6 +88,55 @@ export class GameScene extends Phaser.Scene {
     });
     this.wireSdkLifecycle();
     this.wirePauseMenu();
+    // Baseline cursor for the gameplay scene -- "grab" reads as "you can
+    // pick something up". DragThrowSystem swaps to "grabbing" on hold.
+    this.input.setDefaultCursor('grab');
+    this.wireCursorOverlay();
+  }
+
+  private cursorOverlay?: Phaser.GameObjects.Container;
+
+  private cursorDebuffActive = false;
+
+  private updateCursorOverlay(): void {
+    if (!this.cursorOverlay) return;
+    const active = CursorDebuff.isActive(this.time.now);
+    if (active) {
+      const p = this.input.activePointer;
+      this.cursorOverlay.setPosition(p.worldX, p.worldY);
+      this.cursorOverlay.setVisible(true);
+      const t = (this.time.now % 600) / 600;
+      this.cursorOverlay.setScale(1 + 0.15 * Math.sin(t * Math.PI * 2));
+    } else if (this.cursorOverlay.visible) {
+      this.cursorOverlay.setVisible(false);
+    }
+    // Swap the OS cursor too so the player gets feedback even when not
+    // hovered over the overlay (it's centered on the pointer regardless).
+    if (active && !this.cursorDebuffActive) {
+      this.input.setDefaultCursor('not-allowed');
+      this.cursorDebuffActive = true;
+    } else if (!active && this.cursorDebuffActive) {
+      this.input.setDefaultCursor('grab');
+      this.cursorDebuffActive = false;
+    }
+  }
+
+  private wireCursorOverlay(): void {
+    // Red "blocked" mark that follows the pointer while the debuff blocks
+    // grabs. A circle with an X drawn through it.
+    const ring = this.add.graphics();
+    ring.lineStyle(3, 0xdc2626, 0.95);
+    ring.strokeCircle(0, 0, 18);
+    ring.lineStyle(3, 0xdc2626, 0.95);
+    ring.lineBetween(-12, -12, 12, 12);
+    ring.lineBetween(-12, 12, 12, -12);
+    const container = this.add.container(0, 0, [ring]).setDepth(950).setVisible(false);
+    this.cursorOverlay = container;
+
+    this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.setDefaultCursor('default');
+      this.cursorDebuffActive = false;
+    });
   }
 
   private wirePauseMenu(): void {
@@ -209,6 +259,7 @@ export class GameScene extends Phaser.Scene {
 
     this.collectDeadEnemies();
     this.refreshUi();
+    this.updateCursorOverlay();
 
     if (this.castle.currentHp <= 0) {
       this.finishAsGameOver();

@@ -5,9 +5,8 @@ import type { Castle } from './Castle';
 import { Enemy } from './Enemy';
 
 const STOP_X = LOGICAL_W * 0.5;
-const CAST_INTERVAL_MS = 2200;
-const DEBUFF_DURATION_MS = 2400;
-const DEBUFF_FACTOR = 0.25; // 25% of normal follow speed -- noticeable lag.
+const CAST_INTERVAL_MS = 4000;
+const DEBUFF_DURATION_MS = 3000; // 3-second grab block per cast.
 
 // Debug-only mage that walks to half-map then sits there casting a recurring
 // drag-throw debuff. Useful for sanity-checking the CursorDebuff plumbing.
@@ -51,7 +50,7 @@ export class CursorMage extends Enemy {
   }
 
   private castDebuff(time: number): void {
-    CursorDebuff.apply(DEBUFF_FACTOR, DEBUFF_DURATION_MS, time);
+    CursorDebuff.apply(DEBUFF_DURATION_MS, time);
     // Pulse the aura: a short ring expansion that matches the cast.
     this.aura.setPosition(this.x, this.y);
     this.scene.tweens.killTweensOf(this.aura);
@@ -65,9 +64,9 @@ export class CursorMage extends Enemy {
     });
     // Floating "slow" text so the test isn't invisible.
     const tag = this.scene.add
-      .text(this.x, this.y - this.stats.radius - 28, 'SLOW', {
+      .text(this.x, this.y - this.stats.radius - 28, 'NO GRAB!', {
         fontSize: '14px',
-        color: '#c084fc',
+        color: '#fca5a5',
         fontStyle: 'bold'
       })
       .setOrigin(0.5)

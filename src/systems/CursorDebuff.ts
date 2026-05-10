@@ -1,29 +1,21 @@
-// Cursor debuff: a global multiplier applied to Enemy.followPointer's
-// snap factor. Anything below 1 makes the dragged enemy lag behind the
-// pointer, mimicking a "slow / heavy / drunk" cursor without touching
-// the OS cursor itself. Set/refresh from any caster (e.g. CursorMage).
+// Cursor debuff: a global timer that, while active, blocks the player
+// from grabbing enemies. DragThrowSystem checks isActive() on pointerdown
+// and refuses to grab; GameScene swaps the OS cursor and shows an
+// overlay while it's running. Set/refresh from any caster (CursorMage).
 
-let multiplier = 1;
 let expiresAt = 0;
 
 export const CursorDebuff = {
-  // Apply (or refresh) the debuff. Caller passes a normalized factor
-  // (0.2 = very laggy, 0.5 = noticeably slower) and a duration in ms.
-  apply(factor: number, durationMs: number, now: number): void {
-    multiplier = factor;
-    expiresAt = now + durationMs;
-  },
-  // Read the current multiplier; auto-clears when expired so callers
-  // don't need to remember to tick it.
-  factor(now: number): number {
-    if (now >= expiresAt) {
-      multiplier = 1;
-      expiresAt = 0;
-    }
-    return multiplier;
+  // Apply (or refresh) the grab-block. durationMs typically 3000.
+  apply(durationMs: number, now: number): void {
+    expiresAt = Math.max(expiresAt, now + durationMs);
   },
   isActive(now: number): boolean {
     return now < expiresAt;
+  },
+  // Milliseconds until the block clears (0 if already clear).
+  remainingMs(now: number): number {
+    return Math.max(0, expiresAt - now);
   },
   expiryTime(): number {
     return expiresAt;
