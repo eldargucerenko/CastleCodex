@@ -343,11 +343,19 @@ export class Enemy extends Phaser.GameObjects.Container {
       }
     }
 
+    // Total speed at moment of contact -- used by every wall/floor branch
+    // so a horizontal slam into the castle deals damage just like a
+    // vertical drop does. Threshold scales with mass.
+    const impactThreshold = 520 + this.stats.mass * 55;
+
     const castleWallX = castle.width + this.stats.radius + 2;
     if (this.x < castleWallX) {
       this.x = castleWallX;
+      const wallSpeed = Math.abs(this.vx) + Math.abs(this.vy);
       this.vx = Math.abs(this.vx) * 0.42;
-      if (Math.abs(this.vx) + Math.abs(this.vy) > 520) {
+      if (wallSpeed > impactThreshold) {
+        const damage = Math.round((wallSpeed - impactThreshold) * this.stats.collisionDamageFactor);
+        if (damage > 0) this.takeDamage(damage);
         this.scene.cameras.main.shake(80, 0.0014);
         this.spawnImpact();
       }
@@ -356,8 +364,11 @@ export class Enemy extends Phaser.GameObjects.Container {
     const rightWallX = LOGICAL_W - this.stats.radius - 4;
     if (this.x > rightWallX) {
       this.x = rightWallX;
+      const wallSpeed = Math.abs(this.vx) + Math.abs(this.vy);
       this.vx = -Math.abs(this.vx) * 0.42;
-      if (Math.abs(this.vx) + Math.abs(this.vy) > 520) {
+      if (wallSpeed > impactThreshold) {
+        const damage = Math.round((wallSpeed - impactThreshold) * this.stats.collisionDamageFactor);
+        if (damage > 0) this.takeDamage(damage);
         this.scene.cameras.main.shake(60, 0.0012);
         this.spawnImpact();
       }
@@ -365,8 +376,9 @@ export class Enemy extends Phaser.GameObjects.Container {
 
     if (this.y >= this.groundY - this.stats.radius) {
       this.y = this.groundY - this.stats.radius;
-      const impactSpeed = Math.abs(this.vy);
-      const impactThreshold = 520 + this.stats.mass * 55;
+      // Combine vy with a fraction of vx so a fast skidding belly-flop
+      // hurts roughly as much as a hard vertical drop.
+      const impactSpeed = Math.abs(this.vy) + Math.abs(this.vx) * 0.6;
       if (impactSpeed > impactThreshold) {
         const damage = Math.round((impactSpeed - impactThreshold) * this.stats.collisionDamageFactor);
         this.takeDamage(damage);
