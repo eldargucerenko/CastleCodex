@@ -4,7 +4,7 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
   basic: {
     kind: 'basic',
     hp: 32,
-    speed: 48,
+    speed: 85,
     attackDamage: 6,
     attackRateMs: 950,
     radius: 14,
@@ -19,7 +19,7 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
   bomber: {
     kind: 'bomber',
     hp: 16,
-    speed: 96,
+    speed: 100,
     attackDamage: 12,
     attackRateMs: 1000,
     radius: 12,
@@ -34,7 +34,7 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
   raider: {
     kind: 'raider',
     hp: 35,
-    speed: 50.4,
+    speed: 70,
     attackDamage: 6,
     attackRateMs: 826,
     radius: 14,
@@ -49,7 +49,7 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
   jumper: {
     kind: 'jumper',
     hp: 32,
-    speed: 48,
+    speed: 76,
     attackDamage: 6,
     attackRateMs: 950,
     radius: 14,
@@ -64,7 +64,7 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
   fat: {
     kind: 'fat',
     hp: 40,
-    speed: 30,
+    speed: 45,
     attackDamage: 12,
     attackRateMs: 1250,
     radius: 23,
@@ -79,7 +79,7 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
   archer: {
     kind: 'archer',
     hp: 36,
-    speed: 42,
+    speed: 56,
     attackDamage: 4,
     attackRateMs: 1200,
     radius: 13,
@@ -119,7 +119,7 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
   trunk: {
     kind: 'trunk',
     hp: 48,
-    speed: 36,
+    speed: 76,
     attackDamage: 14,
     attackRateMs: 1100,
     radius: 16,
@@ -134,7 +134,7 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
   wizard: {
     kind: 'wizard',
     hp: 64,
-    speed: 34,
+    speed: 56,
     attackDamage: 10,
     attackRateMs: 1300,
     radius: 16,

@@ -76,7 +76,7 @@ export class GameScene extends Phaser.Scene {
     this.trapSystem = new TrapSystem(this, this.castle.trapLevel, () => this.enemies);
     this.mageSystem = new MageSystem(this, this.castle, this.castle.mageLevel, () => this.enemies);
     if (effectiveLogTrapCount > 0) {
-      this.rollingLog = new RollingLog(this, () => this.enemies, () => this.consumeRollingLog());
+      this.rollingLog = new RollingLog(this, this.castle, () => this.enemies, () => this.consumeRollingLog());
     }
     this.createUi();
     this.maybeStartTutorial();

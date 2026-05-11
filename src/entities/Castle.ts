@@ -14,8 +14,8 @@ export type PlayerArcherTarget = PlayerDefenderTarget;
 
 export class Castle {
   readonly x = 0;
-  readonly width = 112;
-  readonly top = 120;
+  readonly width = Math.round(LOGICAL_W * 0.2);
+  readonly top = 240;
   readonly bottom: number;
   currentHp: number;
   maxHp: number;
@@ -59,8 +59,12 @@ export class Castle {
     const height = this.bottom - this.top;
     this.body = scene.add.rectangle(this.width / 2, this.top + height / 2, this.width, height, 0x8b5e3c);
     this.body.setStrokeStyle(4, 0x4b2f1a);
-    scene.add.rectangle(58, this.top - 24, 78, 44, 0x9a6a45).setStrokeStyle(3, 0x4b2f1a);
-    scene.add.rectangle(58, this.top - 62, 48, 42, 0x7a5234).setStrokeStyle(3, 0x4b2f1a);
+    scene.add.rectangle(this.width / 2, this.top - 10, this.width - 18, 34, 0x9a6a45).setStrokeStyle(3, 0x4b2f1a);
+    for (let x = 18; x < this.width; x += 34) {
+      scene.add.rectangle(x, this.top - 36, 20, 32, 0x7a5234).setStrokeStyle(3, 0x4b2f1a);
+    }
+    scene.add.rectangle(this.width / 2, this.top + height * 0.44, this.width * 0.42, height * 0.46, 0x6f452b).setStrokeStyle(3, 0x4b2f1a);
+    scene.add.circle(this.width / 2, this.top + height * 0.44, 18, 0x1f2937, 0.45);
 
     this.createPlayerArchers();
     this.createPlayerMage();
@@ -132,8 +136,8 @@ export class Castle {
   private createPlayerArchers(): void {
     const count = Math.min(3, this.archerLevel);
     for (let i = 0; i < count; i += 1) {
-      const x = 84;
-      const y = 140 + i * 42;
+      const x = this.width - 34;
+      const y = this.top + 26 + i * 42;
       const maxHp = 20;
       const hp = Phaser.Math.Clamp(this.archerHp[i] ?? maxHp, 0, maxHp);
       const body = this.scene.add.circle(x, y, 8, 0xfef3c7).setStrokeStyle(2, 0x78350f);
@@ -148,8 +152,8 @@ export class Castle {
 
   private createPlayerMage(): void {
     if (this.mageLevel <= 0) return;
-    const x = 58;
-    const y = 82;
+    const x = this.width / 2;
+    const y = this.top - 54;
     const maxHp = 32;
     const hp = Phaser.Math.Clamp(this.mageHp ?? maxHp, 0, maxHp);
     const body = this.scene.add.circle(x, y, 14, 0x60a5fa).setStrokeStyle(2, 0x1e3a8a);
