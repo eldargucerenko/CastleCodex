@@ -26,7 +26,7 @@ export class ArcherSystem {
         return;
       }
       if (target.alive) target.takeDamage(this.damage);
-    });
+    }, 'arrow-castle');
   }
 
   private canShootTarget(enemy: Enemy, range: number): boolean {

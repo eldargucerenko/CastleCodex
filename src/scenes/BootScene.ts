@@ -36,6 +36,12 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
+    // Arrow projectile art -- castle archers fire the blue arrow, enemy
+    // archers the wooden one. Loaded as plain images; Projectile rotates
+    // the sprite to its flight direction.
+    this.load.image('arrow-castle', `${assetBasePath}assets/projectiles/arrow_castle.png`);
+    this.load.image('arrow-enemy', `${assetBasePath}assets/projectiles/arrow_enemy.png`);
+
     SoundBank.preload(this, assetBasePath);
   }
 

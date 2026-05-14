@@ -27,11 +27,11 @@ export class ArcherEnemy extends Enemy {
         if (defender) {
           new Projectile(this.scene, this.x, this.y - 6, defender.x, defender.y, 420, 0xffd166, () => {
             castle.damageDefender(defender, Math.ceil(defender.maxHp / 2));
-          });
+          }, 'arrow-enemy');
         } else {
           new Projectile(this.scene, this.x, this.y - 6, castle.width + 12, this.y - 20, 420, 0xffd166, () => {
             castle.takeDamage(this.stats.projectileDamage ?? 4);
-          });
+          }, 'arrow-enemy');
         }
       }
       return;
