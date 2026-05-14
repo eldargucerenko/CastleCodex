@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { getSdkMuted, setSdkMuted } from '../sdk/gamepush';
 import { SaveSystem } from '../systems/SaveSystem';
+import { SoundBank } from '../systems/SoundBank';
 import { COLORS, FONTS, HEX, makeButton, makePanel } from '../ui/theme';
 import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
@@ -60,7 +61,10 @@ export class PauseMenuScene extends Phaser.Scene {
       label: 'Continue',
       variant: 'primary',
       size: 'md',
-      onClick: () => this.continueGame()
+      onClick: () => {
+        SoundBank.play(this, 'ui_click');
+        this.continueGame();
+      }
     });
 
     this.resetButton = makeButton(this, cx, cy + 30, {
@@ -69,7 +73,10 @@ export class PauseMenuScene extends Phaser.Scene {
       label: 'New Game',
       variant: 'danger',
       size: 'md',
-      onClick: () => this.handleReset()
+      onClick: () => {
+        SoundBank.play(this, 'ui_click');
+        this.handleReset();
+      }
     });
 
     this.soundButton = makeButton(this, cx, cy + 90, {
@@ -78,7 +85,10 @@ export class PauseMenuScene extends Phaser.Scene {
       label: this.soundButtonLabel(),
       variant: 'secondary',
       size: 'md',
-      onClick: () => this.toggleSound()
+      onClick: () => {
+        SoundBank.play(this, 'ui_click');
+        this.toggleSound();
+      }
     });
 
     this.add
@@ -98,7 +108,7 @@ export class PauseMenuScene extends Phaser.Scene {
 
   private toggleSound(): void {
     this.muted = !this.muted;
-    PauseMenuScene.saveMuted(this.muted);
+    SoundBank.setMuted(this, this.muted);
     this.soundButton.setLabel(this.soundButtonLabel());
   }
 

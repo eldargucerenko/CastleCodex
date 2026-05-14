@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ENEMY_STATS } from '../data/enemies';
 import { DebugCheatSystem } from '../systems/DebugCheatSystem';
+import { SoundBank } from '../systems/SoundBank';
 import type { EnemyKind, EnemyState, EnemyStats, WizardState } from '../types/game';
 import type { Castle } from './Castle';
 import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
@@ -60,14 +61,16 @@ const EXTRAS_BY_KIND: Partial<Record<EnemyKind, AnimExtras>> = {
     air: 'enemy-log-thrower-air', getup: 'enemy-log-thrower-getup', hurt: 'enemy-log-thrower-hurt',
     strikes: ['enemy-log-thrower-strike1', 'enemy-log-thrower-strike2']
   },
+  // Wizards only ever fire the strike1 cast anim from their projectile tick;
+  // strike2 was dead art so it's dropped from the pool entirely.
   wizard: {
     air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt',
-    strikes: ['enemy-wizard-strike1', 'enemy-wizard-strike2']
+    strikes: ['enemy-wizard-strike1']
   },
-  wizard_easy:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1', 'enemy-wizard-strike2'] },
-  wizard_medium: { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1', 'enemy-wizard-strike2'] },
-  wizard_hard:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1', 'enemy-wizard-strike2'] },
-  cursor_mage:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1', 'enemy-wizard-strike2'] }
+  wizard_easy:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1'] },
+  wizard_medium: { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1'] },
+  wizard_hard:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1'] },
+  cursor_mage:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1'] }
 };
 
 export class Enemy extends Phaser.GameObjects.Container {
@@ -364,6 +367,7 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.visible = false;
     this.active = false;
     this.groundShadow.setVisible(false);
+    SoundBank.play(this.scene, 'death');
   }
 
   // The ground shadow lives outside the container so we have to clean it up
@@ -448,6 +452,9 @@ export class Enemy extends Phaser.GameObjects.Container {
         if (damage > 0) this.takeDamage(damage);
         this.scene.cameras.main.shake(80, 0.0014);
         this.spawnImpact();
+        // Skip the impact thud if the impact also killed the enemy --
+        // the death SFX is about to play and stacking both reads as mud.
+        if (this.state !== 'Dead') SoundBank.play(this.scene, 'fall');
       }
     }
 
@@ -461,6 +468,7 @@ export class Enemy extends Phaser.GameObjects.Container {
         if (damage > 0) this.takeDamage(damage);
         this.scene.cameras.main.shake(60, 0.0012);
         this.spawnImpact();
+        if (this.state !== 'Dead') SoundBank.play(this.scene, 'fall');
       }
     }
 
@@ -474,6 +482,7 @@ export class Enemy extends Phaser.GameObjects.Container {
         this.takeDamage(damage);
         this.scene.cameras.main.shake(Math.min(160, impactSpeed / 6), Math.min(0.0035, impactSpeed / 200000));
         this.spawnImpact();
+        if (this.state !== 'Dead') SoundBank.play(this.scene, 'fall');
       }
       if (!this.groundedThisFlight) {
         this.groundedThisFlight = true;

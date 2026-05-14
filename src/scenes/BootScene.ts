@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { awaitPlayerReady, cloudLoad, cloudSave, gameLoadingReady, initGamePush, trackLevelStart } from '../sdk/gamepush';
 import { SaveSystem } from '../systems/SaveSystem';
+import { SoundBank } from '../systems/SoundBank';
 import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 
 export class BootScene extends Phaser.Scene {
@@ -18,7 +19,7 @@ export class BootScene extends Phaser.Scene {
       { name: 'archer',       key: 'archer',       actions: ['walk', 'air_panic', 'getup', 'hurt',             'strike2'] },
       { name: 'bomber',       key: 'bomber',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
       { name: 'raider',       key: 'raider',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
-      { name: 'wizard',       key: 'wizard',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
+      { name: 'wizard',       key: 'wizard',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1'] },
       { name: 'heavy_knight', key: 'heavy-knight', actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
       { name: 'log_thrower',  key: 'log-thrower',  actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
       { name: 'hammerman',    key: 'jumper',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] }
@@ -34,6 +35,8 @@ export class BootScene extends Phaser.Scene {
         );
       }
     }
+
+    SoundBank.preload(this, assetBasePath);
   }
 
   // Asset filenames use 'air_panic' but the in-engine key is just 'air'.

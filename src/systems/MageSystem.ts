@@ -16,13 +16,22 @@ export class MageSystem {
     const mage = this.castle.getLivingMageTarget();
     if (!mage) return;
     const target = this.getEnemies()
-      .filter((enemy) => enemy.alive)
+      .filter((enemy) => this.isValidTarget(enemy))
       .sort((a, b) => a.x - b.x)[0];
     if (!target) return;
     this.nextCastAt = time + this.cooldown;
-    Projectile.homing(this.scene, mage.x + 10, mage.y + 2, () => (target.alive ? target : undefined), 560, 0x60a5fa, () => {
+    // Re-validate per frame so a spell already in flight drops its target
+    // when the player grabs (or hurls) the enemy -- otherwise the homing
+    // callback chases the dragged sprite around like an auto-aim aimbot.
+    Projectile.homing(this.scene, mage.x + 10, mage.y + 2, () => (this.isValidTarget(target) ? target : undefined), 560, 0x60a5fa, () => {
       this.resolveSpellHit(time, target, this.radius, this.damage);
     });
+  }
+
+  private isValidTarget(enemy: Enemy): boolean {
+    if (!enemy.alive) return false;
+    if (enemy.state === 'Grabbed' || enemy.state === 'Flying') return false;
+    return true;
   }
 
   private resolveSpellHit(time: number, target: Enemy, radius: number, damage: number): void {

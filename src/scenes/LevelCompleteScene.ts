@@ -5,6 +5,7 @@ import { computeReplaySave } from '../systems/replay';
 import type { SaveData } from '../types/game';
 import { COLORS, FONTS, HEX, drawStar, makeButton, makePanel } from '../ui/theme';
 import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
+import { SoundBank } from '../systems/SoundBank';
 
 interface LevelCompleteData {
   levelCompleted: number;
@@ -41,6 +42,8 @@ export class LevelCompleteScene extends Phaser.Scene {
     const w = LOGICAL_W;
     const h = LOGICAL_H;
 
+    SoundBank.syncMute(this);
+    SoundBank.play(this, 'victory');
     this.drawBackdrop(w, h);
     this.drawSparks(w, h);
     this.drawBanner(w);
@@ -239,7 +242,10 @@ export class LevelCompleteScene extends Phaser.Scene {
       label: 'Watch',
       variant: 'ad',
       size: 'sm',
-      onClick: () => void this.claimAd()
+      onClick: () => {
+        SoundBank.play(this, 'ui_click');
+        void this.claimAd();
+      }
     });
   }
 
@@ -259,7 +265,10 @@ export class LevelCompleteScene extends Phaser.Scene {
       label: 'Replay',
       variant: 'ghost',
       size: 'sm',
-      onClick: () => this.replay()
+      onClick: () => {
+        SoundBank.play(this, 'ui_click');
+        this.replay();
+      }
     });
     makeButton(this, continueX, y, {
       width: continueW,
@@ -267,7 +276,10 @@ export class LevelCompleteScene extends Phaser.Scene {
       label: continueLabel,
       variant: 'primary',
       size: 'md',
-      onClick: () => this.continueGame()
+      onClick: () => {
+        SoundBank.play(this, 'ui_click');
+        this.continueGame();
+      }
     });
   }
 

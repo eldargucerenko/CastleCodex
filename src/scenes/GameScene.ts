@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Castle } from '../entities/Castle';
 import type { Enemy } from '../entities/Enemy';
 import { gameplayStart, gameplayStop, subscribeSdkPause, trackLevelStart } from '../sdk/gamepush';
+import { CURSOR_OPEN } from '../config/cursors';
 import { CursorDebuff } from '../systems/CursorDebuff';
 import { ArcherSystem } from '../systems/ArcherSystem';
 import { DebugPanelUI } from '../systems/DebugPanelUI';
@@ -9,6 +10,7 @@ import { DragThrowSystem } from '../systems/DragThrowSystem';
 import { EconomySystem } from '../systems/EconomySystem';
 import { MageSystem } from '../systems/MageSystem';
 import { SaveSystem } from '../systems/SaveSystem';
+import { SoundBank } from '../systems/SoundBank';
 import { TrapSystem } from '../systems/TrapSystem';
 import { WaveManager } from '../systems/WaveManager';
 import type { EnemyKind, SaveData } from '../types/game';
@@ -88,13 +90,17 @@ export class GameScene extends Phaser.Scene {
     });
     this.wireSdkLifecycle();
     this.wirePauseMenu();
-    // Cursor stays as the OS default in normal play; only the
-    // CursorDebuff swaps it to "not-allowed".
-    this.input.setDefaultCursor('default');
+    // Open gauntlet is the resting cursor; DragThrowSystem swaps in the
+    // closed fist while an enemy is grabbed, and CursorDebuff hides it.
+    this.input.setDefaultCursor(CURSOR_OPEN);
     this.wireCursorOverlay();
+    SoundBank.syncMute(this);
   }
 
   private cursorOverlay?: Phaser.GameObjects.Container;
+  private cursorOverlayRing?: Phaser.GameObjects.Graphics;
+  private cursorOverlayTimer?: Phaser.GameObjects.Graphics;
+  private cursorOverlayText?: Phaser.GameObjects.Text;
 
   private cursorDebuffActive = false;
 
@@ -106,37 +112,84 @@ export class GameScene extends Phaser.Scene {
       this.cursorOverlay.setPosition(p.worldX, p.worldY);
       this.cursorOverlay.setVisible(true);
       const t = (this.time.now % 600) / 600;
-      this.cursorOverlay.setScale(1 + 0.15 * Math.sin(t * Math.PI * 2));
+      this.cursorOverlay.setScale(1 + 0.08 * Math.sin(t * Math.PI * 2));
+      this.redrawCursorTimer();
     } else if (this.cursorOverlay.visible) {
       this.cursorOverlay.setVisible(false);
     }
-    // Swap the OS cursor too so the player gets feedback even when not
-    // hovered over the overlay (it's centered on the pointer regardless).
+    // Hide the OS cursor while the debuff is up so our custom widget IS
+    // the cursor — keeps the countdown the only thing the player sees.
     if (active && !this.cursorDebuffActive) {
-      this.input.setDefaultCursor('not-allowed');
+      this.input.setDefaultCursor('none');
       this.cursorDebuffActive = true;
     } else if (!active && this.cursorDebuffActive) {
-      this.input.setDefaultCursor('default');
+      this.input.setDefaultCursor(CURSOR_OPEN);
       this.cursorDebuffActive = false;
     }
   }
 
   private wireCursorOverlay(): void {
-    // Red "blocked" mark that follows the pointer while the debuff blocks
-    // grabs. A circle with an X drawn through it.
+    // Blocked-grab cursor: inner red ring with an X, plus an outer arc that
+    // depletes counter-clockwise as the debuff times out, and a numeric
+    // seconds-remaining readout to the side.
     const ring = this.add.graphics();
+    ring.fillStyle(0x1f1235, 0.55);
+    ring.fillCircle(0, 0, 18);
     ring.lineStyle(3, 0xdc2626, 0.95);
     ring.strokeCircle(0, 0, 18);
-    ring.lineStyle(3, 0xdc2626, 0.95);
-    ring.lineBetween(-12, -12, 12, 12);
-    ring.lineBetween(-12, 12, 12, -12);
-    const container = this.add.container(0, 0, [ring]).setDepth(950).setVisible(false);
+    ring.lineBetween(-11, -11, 11, 11);
+    ring.lineBetween(-11, 11, 11, -11);
+
+    const timerRing = this.add.graphics();
+    const timerText = this.add
+      .text(0, 30, '', {
+        color: '#fde68a',
+        fontFamily: 'Jersey 15, monospace',
+        fontSize: '18px',
+        stroke: '#1f1235',
+        strokeThickness: 4
+      })
+      .setOrigin(0.5);
+
+    const container = this.add
+      .container(0, 0, [timerRing, ring, timerText])
+      .setDepth(950)
+      .setVisible(false);
+
     this.cursorOverlay = container;
+    this.cursorOverlayRing = ring;
+    this.cursorOverlayTimer = timerRing;
+    this.cursorOverlayText = timerText;
 
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.setDefaultCursor('default');
       this.cursorDebuffActive = false;
     });
+  }
+
+  private redrawCursorTimer(): void {
+    const timer = this.cursorOverlayTimer;
+    const text = this.cursorOverlayText;
+    if (!timer || !text) return;
+    const progress = CursorDebuff.progress(this.time.now);
+    const remainingMs = CursorDebuff.remainingMs(this.time.now);
+
+    timer.clear();
+    // Faint full ring underneath the depleting arc, so the empty portion
+    // still reads as the "track" rather than blank space.
+    timer.lineStyle(4, 0x4c1d95, 0.35);
+    timer.strokeCircle(0, 0, 26);
+
+    if (progress > 0) {
+      const start = -Math.PI / 2;
+      const end = start + Math.PI * 2 * progress;
+      timer.lineStyle(4, 0xf97316, 0.95);
+      timer.beginPath();
+      timer.arc(0, 0, 26, start, end, false);
+      timer.strokePath();
+    }
+
+    text.setText(`${(remainingMs / 1000).toFixed(1)}s`);
   }
 
   private wirePauseMenu(): void {
@@ -454,7 +507,10 @@ export class GameScene extends Phaser.Scene {
     bg.on('pointerout', () => bg.setFillStyle(COLORS.parchment200));
     bg.on('pointerdown', () => {
       const next = !PauseMenuScene.loadMuted();
-      PauseMenuScene.saveMuted(next);
+      // Play the click *before* the mute flip so the user gets feedback
+      // that they just turned sound off (the next sound wouldn't play).
+      SoundBank.play(this, 'ui_click');
+      SoundBank.setMuted(this, next);
       draw(next);
     });
     return c;
@@ -473,7 +529,10 @@ export class GameScene extends Phaser.Scene {
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerover', () => bg.setFillStyle(COLORS.parchment100));
     bg.on('pointerout', () => bg.setFillStyle(COLORS.parchment200));
-    bg.on('pointerdown', () => this.openPauseMenu());
+    bg.on('pointerdown', () => {
+      SoundBank.play(this, 'ui_click');
+      this.openPauseMenu();
+    });
     return c;
   }
 
@@ -495,6 +554,7 @@ export class GameScene extends Phaser.Scene {
         this.killed += 1;
         this.save.gold += enemy.stats.killReward;
         this.floatText(enemy.x, enemy.y, `+${enemy.stats.killReward}g`, '#facc15');
+        SoundBank.play(this, 'coin');
         enemy.destroy();
       } else {
         survivors.push(enemy);

@@ -6,4 +6,5 @@ localtunnel.*
 .playwright-mcp/
 *.png
 !public/**/*.png
+!pre-assets/**/*.png
 game-*.zip

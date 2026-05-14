@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { CastleProgress } from '../types/game';
 import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
+import { SoundBank } from '../systems/SoundBank';
 
 export interface PlayerDefenderTarget {
   kind: 'archer' | 'mage';
@@ -74,6 +75,7 @@ export class Castle {
     const damage = Math.max(1, Math.round(rawDamage * (1 - this.baseDamageReduction)));
     this.currentHp = Math.max(0, this.currentHp - damage);
     this.scene.cameras.main.shake(60, 0.0012);
+    SoundBank.play(this.scene, 'castle_damage');
     return damage;
   }
 

@@ -2,7 +2,9 @@ import Phaser from 'phaser';
 import type { Castle } from '../entities/Castle';
 import type { Enemy } from '../entities/Enemy';
 import { WizardEnemy } from '../entities/WizardEnemy';
+import { CURSOR_CLOSED, CURSOR_OPEN } from '../config/cursors';
 import { CursorDebuff } from './CursorDebuff';
+import { SoundBank } from './SoundBank';
 
 interface PointerSample {
   x: number;
@@ -10,9 +12,15 @@ interface PointerSample {
   time: number;
 }
 
+// Below this hold time, treat the press+release as a tap and skip the
+// throw whoosh -- the grab blip already covered the click and a second
+// SFX firing 50ms later just sounds noisy.
+const TAP_VS_THROW_MS = 150;
+
 export class DragThrowSystem {
   private grabbed?: Enemy;
   private samples: PointerSample[] = [];
+  private grabbedAt = 0;
 
   constructor(
     private scene: Phaser.Scene,
@@ -28,6 +36,12 @@ export class DragThrowSystem {
     // a grabbed enemy would freeze in place; release it as if the user had
     // let go right at the border.
     scene.input.on('gameout', this.onGameOut, this);
+    // Per-frame follow tick: pointermove events only fire when the OS sends
+    // a new sample (60-120Hz, capped by mouse polling). Between events the
+    // enemy needs to keep lerping toward the last pointer position or it
+    // visibly trails behind on fast drags. This re-applies followPointer
+    // every render frame using the always-up-to-date activePointer worldX/Y.
+    scene.events.on(Phaser.Scenes.Events.UPDATE, this.onSceneUpdate, this);
   }
 
   destroy(): void {
@@ -36,6 +50,13 @@ export class DragThrowSystem {
     this.scene.input.off('pointerup', this.onPointerUp, this);
     this.scene.input.off('pointerupoutside', this.onPointerUp, this);
     this.scene.input.off('gameout', this.onGameOut, this);
+    this.scene.events.off(Phaser.Scenes.Events.UPDATE, this.onSceneUpdate, this);
+  }
+
+  private onSceneUpdate(): void {
+    if (!this.grabbed) return;
+    const p = this.scene.input.activePointer;
+    this.grabbed.followPointer(p.worldX, p.worldY);
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
@@ -62,6 +83,9 @@ export class DragThrowSystem {
       enemy.grab();
       this.grabbed = enemy;
       this.samples = [{ x: pointer.worldX, y: pointer.worldY, time: pointer.event.timeStamp }];
+      this.grabbedAt = this.scene.time.now;
+      SoundBank.play(this.scene, 'grab');
+      this.scene.input.setDefaultCursor(CURSOR_CLOSED);
       return;
     }
 
@@ -73,12 +97,16 @@ export class DragThrowSystem {
     if (!enemy.canBeGrabbed) return;
     this.grabbed = enemy;
     this.samples = [{ x: pointer.worldX, y: pointer.worldY, time: pointer.event.timeStamp }];
+    this.grabbedAt = this.scene.time.now;
     enemy.grab();
+    SoundBank.play(this.scene, 'grab');
+    this.scene.input.setDefaultCursor(CURSOR_CLOSED);
   }
 
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
     if (!this.grabbed) return;
-    this.grabbed.followPointer(pointer.worldX, pointer.worldY);
+    // followPointer runs per-frame in onSceneUpdate now; we just record
+    // the raw pointer samples here so release() can compute throw velocity.
     this.samples.push({ x: pointer.worldX, y: pointer.worldY, time: pointer.event.timeStamp });
     if (this.samples.length > 6) this.samples.shift();
   }
@@ -103,6 +131,14 @@ export class DragThrowSystem {
     const vy = ((last.y - first.y) / elapsed) * 1000;
     this.grabbed.release(vx, vy);
     this.spawnTrail(this.grabbed.x, this.grabbed.y, vx, vy);
+    if (this.scene.time.now - this.grabbedAt >= TAP_VS_THROW_MS) {
+      SoundBank.play(this.scene, 'throw');
+    }
+    // Back to the open hand -- unless a CursorDebuff is up, in which case
+    // GameScene is keeping the cursor hidden and owns the restore.
+    if (!CursorDebuff.isActive(this.scene.time.now)) {
+      this.scene.input.setDefaultCursor(CURSOR_OPEN);
+    }
     this.grabbed = undefined;
     this.samples = [];
   }
