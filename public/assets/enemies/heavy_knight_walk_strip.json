@@ -1,5 +1,5 @@
 {
-  "sheet": "heavy_knight_strip.png",
+  "sheet": "heavy_knight_walk_strip.png",
   "cell_size": 256,
   "animation": "walk",
   "directions": 1,

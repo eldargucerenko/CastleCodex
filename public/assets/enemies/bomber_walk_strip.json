@@ -1,5 +1,5 @@
 {
-  "sheet": "bomber_strip.png",
+  "sheet": "bomber_walk_strip.png",
   "cell_size": 256,
   "animation": "walk",
   "directions": 1,

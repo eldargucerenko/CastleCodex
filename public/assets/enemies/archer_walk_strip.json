@@ -1,5 +1,5 @@
 {
-  "sheet": "archer_strip.png",
+  "sheet": "archer_walk_strip.png",
   "cell_size": 256,
   "animation": "walk",
   "directions": 1,

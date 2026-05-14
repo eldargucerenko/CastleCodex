@@ -1,5 +1,5 @@
 {
-  "sheet": "raider_strip.png",
+  "sheet": "raider_walk_strip.png",
   "cell_size": 256,
   "animation": "walk",
   "directions": 1,
