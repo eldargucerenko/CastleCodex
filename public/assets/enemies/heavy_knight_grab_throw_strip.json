@@ -1,7 +1,7 @@
 {
   "sheet": "heavy_knight_grab_throw_strip.png",
   "cell_size": 256,
-  "animation": "walk",
+  "animation": "grab_throw",
   "directions": 1,
   "frames_per_dir": 8,
   "frames": [
