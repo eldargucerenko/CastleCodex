@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Castle } from '../entities/Castle';
 import type { Enemy } from '../entities/Enemy';
 import { gameplayStart, gameplayStop, subscribeSdkPause, trackLevelStart } from '../sdk/gamepush';
-import { CURSOR_OPEN } from '../config/cursors';
+import { CURSOR_BLOCKED, CURSOR_OPEN } from '../config/cursors';
 import { CursorDebuff } from '../systems/CursorDebuff';
 import { ArcherSystem } from '../systems/ArcherSystem';
 import { DebugPanelUI } from '../systems/DebugPanelUI';
@@ -86,7 +86,15 @@ export class GameScene extends Phaser.Scene {
     this.levelStartedAt = Date.now();
     DebugPanelUI.ensureMounted({
       spawnHandler: (kind) => this.spawnDebugEnemy(kind),
-      getSpawnEnabled: () => this.scene.isActive() && !this.finishing
+      getSpawnEnabled: () => this.scene.isActive() && !this.finishing,
+      getCastleHp: () => ({ current: this.castle.currentHp, max: this.castle.maxHp }),
+      // Cheat: allow above-max HP. If hp > maxHp, bump maxHp too so the HP
+      // bar's 100% mark grows with you instead of overflowing the bar.
+      setCastleHp: (hp) => {
+        const v = Math.max(0, Math.round(hp));
+        if (v > this.castle.maxHp) this.castle.maxHp = v;
+        this.castle.currentHp = v;
+      }
     });
     this.wireSdkLifecycle();
     this.wirePauseMenu();
@@ -98,29 +106,27 @@ export class GameScene extends Phaser.Scene {
   }
 
   private cursorOverlay?: Phaser.GameObjects.Container;
-  private cursorOverlayRing?: Phaser.GameObjects.Graphics;
-  private cursorOverlayTimer?: Phaser.GameObjects.Graphics;
   private cursorOverlayText?: Phaser.GameObjects.Text;
 
   private cursorDebuffActive = false;
 
   private updateCursorOverlay(): void {
-    if (!this.cursorOverlay) return;
+    if (!this.cursorOverlay || !this.cursorOverlayText) return;
     const active = CursorDebuff.isActive(this.time.now);
     if (active) {
       const p = this.input.activePointer;
-      this.cursorOverlay.setPosition(p.worldX, p.worldY);
+      // Sit the countdown next to the cursor, not on top of it: the gauntlet
+      // texture is ~64x64 with the hotspot at the palm, so an offset of
+      // (+22, -26) puts the readout up-and-to-the-right of the hand.
+      this.cursorOverlay.setPosition(p.worldX + 22, p.worldY - 26);
       this.cursorOverlay.setVisible(true);
-      const t = (this.time.now % 600) / 600;
-      this.cursorOverlay.setScale(1 + 0.08 * Math.sin(t * Math.PI * 2));
-      this.redrawCursorTimer();
+      const remainingMs = CursorDebuff.remainingMs(this.time.now);
+      this.cursorOverlayText.setText(`${(remainingMs / 1000).toFixed(1)}s`);
     } else if (this.cursorOverlay.visible) {
       this.cursorOverlay.setVisible(false);
     }
-    // Hide the OS cursor while the debuff is up so our custom widget IS
-    // the cursor — keeps the countdown the only thing the player sees.
     if (active && !this.cursorDebuffActive) {
-      this.input.setDefaultCursor('none');
+      this.input.setDefaultCursor(CURSOR_BLOCKED);
       this.cursorDebuffActive = true;
     } else if (!active && this.cursorDebuffActive) {
       this.input.setDefaultCursor(CURSOR_OPEN);
@@ -129,67 +135,31 @@ export class GameScene extends Phaser.Scene {
   }
 
   private wireCursorOverlay(): void {
-    // Blocked-grab cursor: inner red ring with an X, plus an outer arc that
-    // depletes counter-clockwise as the debuff times out, and a numeric
-    // seconds-remaining readout to the side.
-    const ring = this.add.graphics();
-    ring.fillStyle(0x1f1235, 0.55);
-    ring.fillCircle(0, 0, 18);
-    ring.lineStyle(3, 0xdc2626, 0.95);
-    ring.strokeCircle(0, 0, 18);
-    ring.lineBetween(-11, -11, 11, 11);
-    ring.lineBetween(-11, 11, 11, -11);
-
-    const timerRing = this.add.graphics();
+    // Just a small "X.Xs" countdown floating beside the blocked-cursor
+    // texture. The texture itself communicates "blocked"; the text says
+    // how much longer for.
     const timerText = this.add
-      .text(0, 30, '', {
+      .text(0, 0, '', {
         color: '#fde68a',
         fontFamily: 'Jersey 15, monospace',
-        fontSize: '18px',
+        fontSize: '16px',
         stroke: '#1f1235',
         strokeThickness: 4
       })
       .setOrigin(0.5);
 
     const container = this.add
-      .container(0, 0, [timerRing, ring, timerText])
+      .container(0, 0, [timerText])
       .setDepth(950)
       .setVisible(false);
 
     this.cursorOverlay = container;
-    this.cursorOverlayRing = ring;
-    this.cursorOverlayTimer = timerRing;
     this.cursorOverlayText = timerText;
 
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.setDefaultCursor('default');
       this.cursorDebuffActive = false;
     });
-  }
-
-  private redrawCursorTimer(): void {
-    const timer = this.cursorOverlayTimer;
-    const text = this.cursorOverlayText;
-    if (!timer || !text) return;
-    const progress = CursorDebuff.progress(this.time.now);
-    const remainingMs = CursorDebuff.remainingMs(this.time.now);
-
-    timer.clear();
-    // Faint full ring underneath the depleting arc, so the empty portion
-    // still reads as the "track" rather than blank space.
-    timer.lineStyle(4, 0x4c1d95, 0.35);
-    timer.strokeCircle(0, 0, 26);
-
-    if (progress > 0) {
-      const start = -Math.PI / 2;
-      const end = start + Math.PI * 2 * progress;
-      timer.lineStyle(4, 0xf97316, 0.95);
-      timer.beginPath();
-      timer.arc(0, 0, 26, start, end, false);
-      timer.strokePath();
-    }
-
-    text.setText(`${(remainingMs / 1000).toFixed(1)}s`);
   }
 
   private wirePauseMenu(): void {
@@ -502,7 +472,9 @@ export class GameScene extends Phaser.Scene {
     draw(PauseMenuScene.loadMuted());
     this.redrawSoundIcon = draw;
 
-    bg.setInteractive({ useHandCursor: true });
+    // No useHandCursor: the gauntlet cursor already reads as a clickable
+    // hand, and Phaser's 'pointer' would override it back to the OS arrow.
+    bg.setInteractive();
     bg.on('pointerover', () => bg.setFillStyle(COLORS.parchment100));
     bg.on('pointerout', () => bg.setFillStyle(COLORS.parchment200));
     bg.on('pointerdown', () => {
@@ -526,7 +498,7 @@ export class GameScene extends Phaser.Scene {
     icon.fillRect(-6, -7, 4, 14);
     icon.fillRect(2, -7, 4, 14);
     c.add([bg, icon]);
-    bg.setInteractive({ useHandCursor: true });
+    bg.setInteractive();
     bg.on('pointerover', () => bg.setFillStyle(COLORS.parchment100));
     bg.on('pointerout', () => bg.setFillStyle(COLORS.parchment200));
     bg.on('pointerdown', () => {

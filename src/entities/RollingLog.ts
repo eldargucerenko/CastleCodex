@@ -21,7 +21,9 @@ export class RollingLog {
   ) {
     this.body = scene.add.rectangle(castle.width / 2, castle.top - 58, castle.width * 0.44, 20, 0x7c3f1d).setStrokeStyle(3, 0x3f1f0f).setDepth(45);
     this.body.setAngle(-8);
-    this.body.setInteractive({ useHandCursor: true });
+    // Skip useHandCursor so the gauntlet cursor stays on hover instead of
+    // being swapped for the OS pointer arrow.
+    this.body.setInteractive();
     this.label = scene.add.text(castle.width / 2, castle.top - 84, 'LOG', { color: '#3f1f0f', fontSize: '13px', fontStyle: 'bold' }).setOrigin(0.5).setDepth(46);
 
     this.body.on('pointerdown', () => this.startRolling());

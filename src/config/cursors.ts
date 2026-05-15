@@ -14,3 +14,7 @@ function assetBase(): string {
 const HOTSPOT = '32 28';
 export const CURSOR_OPEN = `url(${assetBase()}assets/ui/cursor_gauntlet_open.png) ${HOTSPOT}, default`;
 export const CURSOR_CLOSED = `url(${assetBase()}assets/ui/cursor_gauntlet_closed.png) ${HOTSPOT}, grabbing`;
+// Shown while a CursorDebuff blocks grabbing -- gauntlet with a red
+// no-symbol painted over it. Hotspot stays at the palm so the cursor
+// position doesn't jump when the debuff starts/ends.
+export const CURSOR_BLOCKED = `url(${assetBase()}assets/ui/cursor_no_touch.png) ${HOTSPOT}, not-allowed`;

@@ -5,6 +5,8 @@ import { DebugCheatSystem, type DebugStatKey } from './DebugCheatSystem';
 interface MountOptions {
   spawnHandler: (kind: EnemyKind) => void;
   getSpawnEnabled: () => boolean;
+  getCastleHp: () => { current: number; max: number };
+  setCastleHp: (hp: number) => void;
 }
 
 const STAT_KEYS: DebugStatKey[] = ['hp', 'attackDamage', 'speed', 'range'];
@@ -131,7 +133,11 @@ export class DebugPanelUI {
   private panel!: HTMLDivElement;
   private spawnHandler: (kind: EnemyKind) => void;
   private getSpawnEnabled: () => boolean;
+  private getCastleHp: () => { current: number; max: number };
+  private setCastleHp: (hp: number) => void;
   private spawnButtons: HTMLButtonElement[] = [];
+  private castleHpInput?: HTMLInputElement;
+  private castleHpLabel?: HTMLSpanElement;
   private keyListener: (e: KeyboardEvent) => void;
   private rafHandle = 0;
 
@@ -139,6 +145,8 @@ export class DebugPanelUI {
     if (mounted) {
       mounted.spawnHandler = opts.spawnHandler;
       mounted.getSpawnEnabled = opts.getSpawnEnabled;
+      mounted.getCastleHp = opts.getCastleHp;
+      mounted.setCastleHp = opts.setCastleHp;
       return mounted;
     }
     mounted = new DebugPanelUI(opts);
@@ -148,10 +156,15 @@ export class DebugPanelUI {
   private constructor(opts: MountOptions) {
     this.spawnHandler = opts.spawnHandler;
     this.getSpawnEnabled = opts.getSpawnEnabled;
+    this.getCastleHp = opts.getCastleHp;
+    this.setCastleHp = opts.setCastleHp;
     this.injectStyles();
     this.buildToggleButton();
     this.buildPanel();
     this.keyListener = (e) => {
+      // Don't toggle while typing in any debug-panel input.
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
       if (e.key === '`' || e.code === 'Backquote') {
         this.toggle();
       }
@@ -159,6 +172,7 @@ export class DebugPanelUI {
     document.addEventListener('keydown', this.keyListener);
     const tick = () => {
       this.refreshSpawnEnabled();
+      this.refreshCastleHp();
       this.rafHandle = window.requestAnimationFrame(tick);
     };
     this.rafHandle = window.requestAnimationFrame(tick);
@@ -223,6 +237,21 @@ export class DebugPanelUI {
         border-radius: 3px; font: bold 12px Arial;
       }
       .dbg-reset:hover { background: #991b1b; }
+      .dbg-castle-row {
+        display: flex; align-items: center; gap: 6px; margin: 4px 0 6px;
+      }
+      .dbg-castle-hp { flex: 1; font-weight: bold; font-size: 12px; }
+      .dbg-castle-row input {
+        width: 56px; background: #0f172a; color: #f9fafb;
+        border: 1px solid #4b5563; padding: 2px 4px; font: 11px Arial;
+        border-radius: 2px;
+      }
+      .dbg-castle-btn {
+        background: #1f2937; color: #f9fafb; border: 1px solid #4b5563;
+        padding: 3px 8px; cursor: pointer; border-radius: 3px;
+        font: bold 11px Arial;
+      }
+      .dbg-castle-btn:hover { background: #374151; }
     `;
     document.head.appendChild(style);
   }
@@ -239,6 +268,8 @@ export class DebugPanelUI {
   private buildPanel(): void {
     const panel = document.createElement('div');
     panel.className = 'dbg-panel';
+
+    panel.appendChild(this.buildCastleSection());
 
     const spawnHeader = document.createElement('h3');
     spawnHeader.textContent = 'Spawn enemy';
@@ -282,6 +313,63 @@ export class DebugPanelUI {
 
     document.body.appendChild(panel);
     this.panel = panel;
+  }
+
+  private buildCastleSection(): HTMLDivElement {
+    const wrap = document.createElement('div');
+    const header = document.createElement('h3');
+    header.textContent = 'Castle';
+    wrap.appendChild(header);
+
+    const row = document.createElement('div');
+    row.className = 'dbg-castle-row';
+
+    const label = document.createElement('span');
+    label.className = 'dbg-castle-hp';
+    label.textContent = 'HP: -';
+    row.appendChild(label);
+    this.castleHpLabel = label;
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '0';
+    input.placeholder = 'set';
+    const apply = () => {
+      const raw = input.value.trim();
+      if (raw === '') return;
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return;
+      // Cheat: no upper clamp -- setCastleHp grows maxHp to match if needed.
+      this.setCastleHp(Math.max(0, Math.round(n)));
+      input.value = '';
+    };
+    input.addEventListener('change', apply);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { apply(); input.blur(); }
+    });
+    row.appendChild(input);
+    this.castleHpInput = input;
+
+    const heal = document.createElement('button');
+    heal.className = 'dbg-castle-btn';
+    heal.textContent = 'Full';
+    heal.addEventListener('click', () => this.setCastleHp(this.getCastleHp().max));
+    row.appendChild(heal);
+
+    const kill = document.createElement('button');
+    kill.className = 'dbg-castle-btn';
+    kill.textContent = '0';
+    kill.addEventListener('click', () => this.setCastleHp(0));
+    row.appendChild(kill);
+
+    wrap.appendChild(row);
+    return wrap;
+  }
+
+  private refreshCastleHp(): void {
+    if (!this.castleHpLabel) return;
+    const { current, max } = this.getCastleHp();
+    this.castleHpLabel.textContent = `HP: ${current} / ${max}`;
   }
 
   private buildStatRow(kind: EnemyKind): HTMLDivElement {
