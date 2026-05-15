@@ -23,13 +23,18 @@ export class ArcherEnemy extends Enemy {
       if (time - this.lastShotAt > (this.stats.projectileRateMs ?? 1500)) {
         this.lastShotAt = time;
         this.triggerStrike();
+        // Spawn the arrow at the bow grip in the strike2 frame. Calibrated
+        // visually with markers in-game: container-local (-12, -8) lands on
+        // the hand holding the bow, where the arrow rests before release.
+        const ox = this.x - 12;
+        const oy = this.y - 8;
         const defender = castle.getLivingDefenderTarget();
         if (defender) {
-          new Projectile(this.scene, this.x, this.y - 6, defender.x, defender.y, 420, 0xffd166, () => {
+          new Projectile(this.scene, ox, oy, defender.x, defender.y, 420, 0xffd166, () => {
             castle.damageDefender(defender, Math.ceil(defender.maxHp / 2));
           }, 'arrow-enemy');
         } else {
-          new Projectile(this.scene, this.x, this.y - 6, castle.width + 12, this.y - 20, 420, 0xffd166, () => {
+          new Projectile(this.scene, ox, oy, castle.width + 12, this.y - 20, 420, 0xffd166, () => {
             castle.takeDamage(this.stats.projectileDamage ?? 4);
           }, 'arrow-enemy');
         }

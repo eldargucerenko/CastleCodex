@@ -144,15 +144,67 @@ export class Enemy extends Phaser.GameObjects.Container {
     if (!animKey || !this.scene.anims.exists(animKey)) return;
     this.shape.setVisible(false);
     this.labelText.setVisible(false);
+    // Source frames are 256x256 but the figure inside fills wildly different
+    // portions per kind (knight walk ~138 tall, archer walk ~226 tall). If we
+    // scaled by the frame, the figure ends up at very different sizes. Read
+    // frame 0's opaque bbox once per spritesheet and scale by the FIGURE's
+    // height so radius * 4.2 = figure height across all kinds. Origin moves
+    // to the figure center so the figure lands at the same container offset.
+    const FRAME = 256;
+    const bbox = Enemy.getFigureBbox(this.scene, animKey, FRAME);
     const targetH = this.stats.radius * 4.2;
+    const scale = targetH / bbox.h;
     const sprite = this.scene.add.sprite(0, -this.stats.radius * 0.6, animKey);
-    const aspect = sprite.width / sprite.height;
-    sprite.setDisplaySize(targetH * aspect, targetH);
+    sprite.setOrigin((bbox.x + bbox.w / 2) / FRAME, (bbox.y + bbox.h / 2) / FRAME);
+    sprite.setScale(scale);
     sprite.setFlipX(true);
     sprite.play(animKey);
     this.chibiSprite = sprite;
     this.chibiAnimKey = animKey;
     this.addAt(sprite, 0);
+  }
+
+  // Cache of figure-bbox per spritesheet texture, computed lazily on first
+  // sight. Reads pixel data from frame 0 of the strip and finds the opaque
+  // bbox so the renderer can scale by the figure size, not the frame size.
+  private static figureBboxCache = new Map<string, { x: number; y: number; w: number; h: number }>();
+
+  private static getFigureBbox(scene: Phaser.Scene, textureKey: string, frame: number): { x: number; y: number; w: number; h: number } {
+    const cached = Enemy.figureBboxCache.get(textureKey);
+    if (cached) return cached;
+    const fallback = { x: 0, y: 0, w: frame, h: frame };
+    try {
+      const tex = scene.textures.get(textureKey);
+      const src = tex.getSourceImage(0) as CanvasImageSource;
+      if (!src) { Enemy.figureBboxCache.set(textureKey, fallback); return fallback; }
+      const canvas = document.createElement('canvas');
+      canvas.width = frame;
+      canvas.height = frame;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { Enemy.figureBboxCache.set(textureKey, fallback); return fallback; }
+      ctx.drawImage(src, 0, 0, frame, frame, 0, 0, frame, frame);
+      const data = ctx.getImageData(0, 0, frame, frame).data;
+      let minX = frame, minY = frame, maxX = 0, maxY = 0;
+      for (let y = 0; y < frame; y++) {
+        const row = y * frame * 4;
+        for (let x = 0; x < frame; x++) {
+          if (data[row + x * 4 + 3] > 40) {
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      const bbox = maxX > minX && maxY > minY
+        ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
+        : fallback;
+      Enemy.figureBboxCache.set(textureKey, bbox);
+      return bbox;
+    } catch {
+      Enemy.figureBboxCache.set(textureKey, fallback);
+      return fallback;
+    }
   }
 
   // Resume the walk animation when the enemy is actually moving and freeze
@@ -188,11 +240,19 @@ export class Enemy extends Phaser.GameObjects.Container {
       altitude > 12;
     const moving = !stationary && Math.abs(dx) > 0.05;
     const isPlaying = this.chibiSprite.anims.isPlaying;
+    const onWalkSheet = this.chibiSprite.texture.key === this.chibiAnimKey;
     if (moving && !isPlaying) {
       this.chibiSprite.play(this.chibiAnimKey);
     } else if (!moving && isPlaying) {
       this.chibiSprite.anims.stop();
       this.chibiSprite.setFrame(0);
+    } else if (!moving && !isPlaying && !onWalkSheet) {
+      // A one-shot anim (strike / hurt / getup) just ended -- the sprite is
+      // sitting on the last frame of THAT sheet, so it visibly stays in a
+      // strike pose (and inherits whatever mirror direction the anim's
+      // source art had) until the enemy moves again. Snap back to the walk
+      // sheet's first frame so the enemy returns to its idle pose.
+      this.chibiSprite.setTexture(this.chibiAnimKey, 0);
     }
   }
 
