@@ -25,12 +25,20 @@ export class BomberEnemy extends Enemy {
       if (this.fuseStartedAt === undefined) {
         this.fuseStartedAt = time;
         // Play the bomber's lit-bomb pose once when the fuse starts so
-        // the visible animation matches what's about to happen.
+        // the visible animation matches what's about to happen, and kick
+        // off a yoyo pulse that runs through the ~1s fuse (5 reps of
+        // 80ms yoyo = 800ms, ends just before explode). Used to be
+        // re-added every frame, which stacked tweens and left the scale
+        // jittering / stuck non-1 after the bomber was thrown.
         this.triggerStrike();
+        this.scene.tweens.add({
+          targets: this,
+          scaleX: 1.18, scaleY: 1.18,
+          yoyo: true, repeat: 4, duration: 80
+        });
       }
       const fuseLeft = Math.max(0, 1 - (time - this.fuseStartedAt) / 1000);
       this.statusText.setText(fuseLeft > 0 ? fuseLeft.toFixed(1) : 'BOOM');
-      this.scene.tweens.add({ targets: this, scaleX: 1.18, scaleY: 1.18, yoyo: true, duration: 80 });
       if (time - this.fuseStartedAt >= 1000) {
         this.explode(castle);
       }

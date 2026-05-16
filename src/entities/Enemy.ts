@@ -107,6 +107,10 @@ export class Enemy extends Phaser.GameObjects.Container {
   // center (otherwise heavy_knight's air anim, whose figure sits ~90 px
   // higher than walk's, would shoot up out of the cursor when grabbed).
   protected lastGrabChibiTex?: string;
+  // Chibi sprite's display scale captured at creation. Used by
+  // figCenterYForTex so the re-anchor math doesn't get thrown off if
+  // anything ever tweens the sprite's local scaleY directly.
+  protected chibiBaseScale?: number;
   protected statusText: Phaser.GameObjects.Text;
   protected hpBar: Phaser.GameObjects.Rectangle;
   protected hpBack: Phaser.GameObjects.Rectangle;
@@ -177,6 +181,7 @@ export class Enemy extends Phaser.GameObjects.Container {
     sprite.play(animKey);
     this.chibiSprite = sprite;
     this.chibiAnimKey = animKey;
+    this.chibiBaseScale = scale;
     // Cache the figure's display half-extents + y-offset so containsPoint
     // can hit-test the visible figure instead of a circle on `radius`.
     this.figHalfW = (bbox.w / 2) * scale;
@@ -217,8 +222,10 @@ export class Enemy extends Phaser.GameObjects.Container {
           }
         }
       }
-      const bbox = maxX > minX && maxY > minY
-        ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
+      // maxX/Y stay below minX/Y if NO opaque pixel was found (initial
+       // sentinels). Otherwise inclusive span = maxX - minX + 1 etc.
+      const bbox = maxX >= minX && maxY >= minY
+        ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 }
         : fallback;
       Enemy.figureBboxCache.set(textureKey, bbox);
       return bbox;
@@ -333,14 +340,16 @@ export class Enemy extends Phaser.GameObjects.Container {
   }
 
   containsPoint(x: number, y: number): boolean {
-    // Prefer the visible-figure rect (walk anim bbox, padded 10%) so the
-    // grab area matches what the player sees. Falls back to the legacy
+    // Prefer the visible-figure rect (walk anim bbox) so the grab area
+    // matches what the player sees. Half-extent multiplier inflates each
+    // side, so 1.05 = 10% wider/taller total. Falls back to the legacy
     // radius circle for kinds without a chibi sprite (no figure metrics).
     if (this.figHalfW !== undefined && this.figHalfH !== undefined && this.figCenterY !== undefined) {
-      const pad = 1.1;
+      const halfExtentMul = 1.05;
       const cx = this.x;
       const cy = this.y + this.figCenterY;
-      return Math.abs(x - cx) <= this.figHalfW * pad && Math.abs(y - cy) <= this.figHalfH * pad;
+      return Math.abs(x - cx) <= this.figHalfW * halfExtentMul
+          && Math.abs(y - cy) <= this.figHalfH * halfExtentMul;
     }
     return Phaser.Math.Distance.Between(this.x, this.y, x, y) <= this.stats.radius + 12;
   }
@@ -398,7 +407,8 @@ export class Enemy extends Phaser.GameObjects.Container {
     const bbox = Enemy.getFigureBbox(this.scene, texKey, 256);
     const figCy = bbox.y + bbox.h / 2;
     const originPxY = this.chibiSprite.originY * 256;
-    return this.chibiSprite.y + (figCy - originPxY) * this.chibiSprite.scaleY;
+    const scale = this.chibiBaseScale ?? this.chibiSprite.scaleY;
+    return this.chibiSprite.y + (figCy - originPxY) * scale;
   }
 
   release(vx: number, vy: number): void {
