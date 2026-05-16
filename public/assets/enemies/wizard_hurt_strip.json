@@ -4,6 +4,15 @@
   "animation": "hurt",
   "directions": 1,
   "frames_per_dir": 8,
+  "anchor": {
+    "x": 128,
+    "y": 244
+  },
+  "source_window": {
+    "clip": "wan_batch/wizard_hurt/wizard_hurt_v07.webp",
+    "start": 0,
+    "end": 32
+  },
   "frames": [
     {
       "direction": 0,

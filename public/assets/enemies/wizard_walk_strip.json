@@ -4,6 +4,10 @@
   "animation": "walk",
   "directions": 1,
   "frames_per_dir": 8,
+  "anchor": {
+    "x": 128,
+    "y": 244
+  },
   "frames": [
     {
       "direction": 0,

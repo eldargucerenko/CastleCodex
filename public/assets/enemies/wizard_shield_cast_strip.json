@@ -1,9 +1,13 @@
 {
-  "sheet": "bomber_strike2_strip.png",
+  "sheet": "wizard_shield_cast_strip.png",
   "cell_size": 256,
-  "animation": "strike2",
+  "animation": "walk",
   "directions": 1,
   "frames_per_dir": 8,
+  "anchor": {
+    "x": 128,
+    "y": 244
+  },
   "frames": [
     {
       "direction": 0,

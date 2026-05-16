@@ -4,6 +4,15 @@
   "animation": "getup",
   "directions": 1,
   "frames_per_dir": 8,
+  "anchor": {
+    "x": 128,
+    "y": 244
+  },
+  "source_window": {
+    "clip": "wan_batch/wizard_getup/wizard_getup_v09.webp",
+    "start": 8,
+    "end": 32
+  },
   "frames": [
     {
       "direction": 0,
