@@ -1,9 +1,13 @@
 {
   "sheet": "orb_strip.png",
   "cell_size": 128,
-  "animation": "orb_pulse",
+  "animation": "walk",
   "directions": 1,
   "frames_per_dir": 8,
+  "anchor": {
+    "x": 64,
+    "y": 64
+  },
   "frames": [
     {
       "direction": 0,
