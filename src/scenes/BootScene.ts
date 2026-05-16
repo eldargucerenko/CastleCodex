@@ -42,8 +42,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image('arrow-castle', `${assetBasePath}assets/projectiles/arrow_castle.png`);
     this.load.image('arrow-enemy', `${assetBasePath}assets/projectiles/arrow_enemy.png`);
 
-    // Orb pulse effect -- 8 frames at 128x128, used by BomberEnemy as the
-    // explosion graphic when its fuse runs out.
+    // Orb pulse effect -- 8 frames at 128x128. Used by BomberEnemy as a
+    // one-shot explosion AND by WizardEnemy as a looping rune-body pulse.
     this.load.spritesheet('effect-orb', `${assetBasePath}assets/effects/orb_strip.png`, {
       frameWidth: 128,
       frameHeight: 128
@@ -96,6 +96,15 @@ export class BootScene extends Phaser.Scene {
         frames: this.anims.generateFrameNumbers('effect-orb', { start: 0, end: 7 }),
         frameRate: 20,
         repeat: 0
+      });
+    }
+    // Same sheet, looping at a gentler tempo: ambient rune-button pulse.
+    if (this.textures.exists('effect-orb') && !this.anims.exists('effect-orb-loop')) {
+      this.anims.create({
+        key: 'effect-orb-loop',
+        frames: this.anims.generateFrameNumbers('effect-orb', { start: 0, end: 7 }),
+        frameRate: 10,
+        repeat: -1
       });
     }
   }

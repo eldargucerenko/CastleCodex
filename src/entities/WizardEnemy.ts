@@ -8,7 +8,7 @@ interface RuneButton {
   digit: number;
   x: number;
   y: number;
-  circle: Phaser.GameObjects.Arc;
+  orb: Phaser.GameObjects.Sprite;
   text: Phaser.GameObjects.Text;
 }
 
@@ -21,6 +21,7 @@ export class WizardEnemy extends Enemy {
   private lastShotAt = 0;
   private shieldCastStartedAt?: number;
   private castText?: Phaser.GameObjects.Text;
+  private runeHitRadius = 16;
 
   constructor(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind = 'wizard_easy', groundY?: number) {
     super(scene, x, y, kind, groundY);
@@ -112,8 +113,8 @@ export class WizardEnemy extends Enemy {
 
     this.wizardState = 'Unlocking';
     this.progress += 1;
-    rune.circle.setFillStyle(0x86efac, 0.95);
-    rune.circle.setStrokeStyle(3, 0x166534, 1);
+    // Tint the orb green for "correct"; the orb texture stays the same.
+    rune.orb.setTint(0x86efac);
     rune.text.setText('*');
     if (this.shield?.active) {
       this.scene.tweens.add({ targets: this.shield, alpha: 0.38, yoyo: true, duration: 90 });
@@ -145,8 +146,7 @@ export class WizardEnemy extends Enemy {
     this.progress = 0;
     this.wizardState = 'Shielded';
     for (const rune of this.runes) {
-      rune.circle.setFillStyle(0xffffff, 0.96);
-      rune.circle.setStrokeStyle(3, 0x111827, 1);
+      rune.orb.clearTint();
       rune.text.setText(String(rune.digit));
     }
   }
@@ -160,12 +160,12 @@ export class WizardEnemy extends Enemy {
     this.runes = [];
     for (const rune of runesToHide) {
       this.scene.tweens.add({
-        targets: [rune.circle, rune.text],
+        targets: [rune.orb, rune.text],
         alpha: 0,
         y: rune.y - 14,
         duration: 420,
         onComplete: () => {
-          rune.circle.destroy();
+          rune.orb.destroy();
           rune.text.destroy();
         }
       });
@@ -250,21 +250,30 @@ export class WizardEnemy extends Enemy {
 
   private createRunes(): void {
     const positions = this.getRunePositions(this.runeCount);
+    // Cropped orb: sphere fills the frame on average ~78 of 128 px (pulses
+    // 66 low to 91 peak). At SIZE=48 the visible sphere averages ~29 px.
+    const ORB_SIZE = 48;
+    // Hit radius matches the FULL displayed sprite (with a small bonus pad)
+    // so it stays forgiving even at the low end of the pulse and through
+    // the orb's outer glow. Better to over-include than under-click.
+    this.runeHitRadius = ORB_SIZE / 2 + 4;
     this.runes = this.sequence.map((digit, index) => {
       const position = positions[index];
-      const circle = this.scene.add.circle(position.x, position.y, 20, 0xffffff, 0.96).setStrokeStyle(3, 0x111827, 1);
+      const orb = this.scene.add.sprite(position.x, position.y, 'effect-orb', 0).setDisplaySize(ORB_SIZE, ORB_SIZE);
+      orb.play('effect-orb-loop');
+      orb.anims.setProgress(Math.random());
       const text = this.scene.add
-        .text(position.x, position.y + 1, String(digit), { color: '#111827', fontSize: '25px', fontStyle: 'bold' })
+        .text(position.x, position.y + 1, String(digit), { color: '#111827', fontSize: '20px', fontStyle: 'bold' })
         .setOrigin(0.5);
-      this.add([circle, text]);
-      return { digit, x: position.x, y: position.y, circle, text };
+      this.add([orb, text]);
+      return { digit, x: position.x, y: position.y, orb, text };
     });
   }
 
   private getRuneAt(pointerX: number, pointerY: number): RuneButton | undefined {
     const localX = pointerX - this.x;
     const localY = pointerY - this.y;
-    return this.runes.find((rune) => Phaser.Math.Distance.Between(localX, localY, rune.x, rune.y) <= 23);
+    return this.runes.find((rune) => Phaser.Math.Distance.Between(localX, localY, rune.x, rune.y) <= this.runeHitRadius);
   }
 
   private getRuneCount(kind: EnemyKind): number {
