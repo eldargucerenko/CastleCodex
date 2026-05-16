@@ -17,7 +17,7 @@ export class BootScene extends Phaser.Scene {
     const sheetSpecs: Array<{ name: string; key: string; actions: string[] }> = [
       { name: 'knight',       key: 'knight',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
       { name: 'archer',       key: 'archer',       actions: ['walk', 'air_panic', 'getup', 'hurt',             'strike2'] },
-      { name: 'bomber',       key: 'bomber',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
+      { name: 'bomber',       key: 'bomber',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1'] },
       { name: 'raider',       key: 'raider',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
       { name: 'wizard',       key: 'wizard',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1'] },
       { name: 'heavy_knight', key: 'heavy-knight', actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
@@ -41,6 +41,13 @@ export class BootScene extends Phaser.Scene {
     // the sprite to its flight direction.
     this.load.image('arrow-castle', `${assetBasePath}assets/projectiles/arrow_castle.png`);
     this.load.image('arrow-enemy', `${assetBasePath}assets/projectiles/arrow_enemy.png`);
+
+    // Orb pulse effect -- 8 frames at 128x128, used by BomberEnemy as the
+    // explosion graphic when its fuse runs out.
+    this.load.spritesheet('effect-orb', `${assetBasePath}assets/effects/orb_strip.png`, {
+      frameWidth: 128,
+      frameHeight: 128
+    });
 
     SoundBank.preload(this, assetBasePath);
   }
@@ -79,6 +86,15 @@ export class BootScene extends Phaser.Scene {
           repeat: repeat as number
         });
       }
+    }
+    // Orb pulse explosion: 8 frames @ 20fps so the blast feels snappy.
+    if (this.textures.exists('effect-orb') && !this.anims.exists('effect-orb-pulse')) {
+      this.anims.create({
+        key: 'effect-orb-pulse',
+        frames: this.anims.generateFrameNumbers('effect-orb', { start: 0, end: 7 }),
+        frameRate: 20,
+        repeat: 0
+      });
     }
   }
 

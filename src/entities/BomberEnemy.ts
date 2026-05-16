@@ -22,7 +22,12 @@ export class BomberEnemy extends Enemy {
     if (this.x <= attackX) {
       this.state = 'AttackCastle';
       this.vx = 0;
-      this.fuseStartedAt ??= time;
+      if (this.fuseStartedAt === undefined) {
+        this.fuseStartedAt = time;
+        // Play the bomber's lit-bomb pose once when the fuse starts so
+        // the visible animation matches what's about to happen.
+        this.triggerStrike();
+      }
       const fuseLeft = Math.max(0, 1 - (time - this.fuseStartedAt) / 1000);
       this.statusText.setText(fuseLeft > 0 ? fuseLeft.toFixed(1) : 'BOOM');
       this.scene.tweens.add({ targets: this, scaleX: 1.18, scaleY: 1.18, yoyo: true, duration: 80 });
@@ -40,14 +45,25 @@ export class BomberEnemy extends Enemy {
   }
 
   private explode(castle: Castle): void {
-    const blast = this.scene.add.circle(this.x, this.y, 12, 0xf97316, 0.5).setDepth(30);
-    this.scene.tweens.add({
-      targets: blast,
-      radius: 58,
-      alpha: 0,
-      duration: 260,
-      onComplete: () => blast.destroy()
-    });
+    // New orb-pulse sprite-based blast. Falls back to the legacy colored
+    // circle if the spritesheet didn't load (defensive against asset gaps).
+    if (this.scene.anims.exists('effect-orb-pulse')) {
+      const blast = this.scene.add.sprite(this.x, this.y, 'effect-orb', 0).setDepth(30);
+      // Source frame is 128px; bomber blast was ~58px radius (116px wide),
+      // so display the orb roughly at that size.
+      blast.setDisplaySize(120, 120);
+      blast.play('effect-orb-pulse');
+      blast.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => blast.destroy());
+    } else {
+      const blast = this.scene.add.circle(this.x, this.y, 12, 0xf97316, 0.5).setDepth(30);
+      this.scene.tweens.add({
+        targets: blast,
+        radius: 58,
+        alpha: 0,
+        duration: 260,
+        onComplete: () => blast.destroy()
+      });
+    }
     castle.takeDamage(this.stats.attackDamage);
     this.die();
   }

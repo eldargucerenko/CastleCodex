@@ -80,7 +80,7 @@ export class DragThrowSystem {
 
     if (enemy instanceof WizardEnemy && enemy.isCastingShield()) {
       enemy.interruptShieldCast();
-      enemy.grab();
+      enemy.grab(pointer.worldX, pointer.worldY);
       this.grabbed = enemy;
       this.samples = [{ x: pointer.worldX, y: pointer.worldY, time: pointer.event.timeStamp }];
       this.grabbedAt = this.scene.time.now;
@@ -98,7 +98,7 @@ export class DragThrowSystem {
     this.grabbed = enemy;
     this.samples = [{ x: pointer.worldX, y: pointer.worldY, time: pointer.event.timeStamp }];
     this.grabbedAt = this.scene.time.now;
-    enemy.grab();
+    enemy.grab(pointer.worldX, pointer.worldY);
     SoundBank.play(this.scene, 'grab');
     this.scene.input.setDefaultCursor(CURSOR_CLOSED);
   }

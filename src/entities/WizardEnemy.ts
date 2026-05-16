@@ -84,13 +84,13 @@ export class WizardEnemy extends Enemy {
     this.x -= this.stats.speed * slow * (delta / 1000);
   }
 
-  override grab(): void {
+  override grab(clickWorldX?: number, clickWorldY?: number): void {
     if (this.wizardState === 'CastingShield') {
       this.interruptShieldCast();
     } else {
       this.cancelShieldCast();
     }
-    super.grab();
+    super.grab(clickWorldX, clickWorldY);
   }
 
   override release(vx: number, vy: number): void {

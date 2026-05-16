@@ -43,7 +43,7 @@ const EXTRAS_BY_KIND: Partial<Record<EnemyKind, AnimExtras>> = {
   },
   bomber: {
     air: 'enemy-bomber-air', getup: 'enemy-bomber-getup', hurt: 'enemy-bomber-hurt',
-    strikes: ['enemy-bomber-strike1', 'enemy-bomber-strike2']
+    strikes: ['enemy-bomber-strike1']
   },
   raider: {
     air: 'enemy-raider-air', getup: 'enemy-raider-getup', hurt: 'enemy-raider-hurt',
@@ -97,6 +97,16 @@ export class Enemy extends Phaser.GameObjects.Container {
   protected figHalfW?: number;
   protected figHalfH?: number;
   protected figCenterY?: number;
+  // Container-local offset of the grab pixel relative to container origin,
+  // captured at grab() time. followPointer uses it (scaled by the grab pop)
+  // so the exact pixel the player clicked stays under the cursor.
+  protected grabOffsetX?: number;
+  protected grabOffsetY?: number;
+  // Chibi texture key seen on the last followPointer tick, used to detect
+  // anim swaps mid-grab so we can re-anchor the offset to the new figure
+  // center (otherwise heavy_knight's air anim, whose figure sits ~90 px
+  // higher than walk's, would shoot up out of the cursor when grabbed).
+  protected lastGrabChibiTex?: string;
   protected statusText: Phaser.GameObjects.Text;
   protected hpBar: Phaser.GameObjects.Rectangle;
   protected hpBack: Phaser.GameObjects.Rectangle;
@@ -335,21 +345,60 @@ export class Enemy extends Phaser.GameObjects.Container {
     return Phaser.Math.Distance.Between(this.x, this.y, x, y) <= this.stats.radius + 12;
   }
 
-  grab(): void {
+  grab(clickWorldX?: number, clickWorldY?: number): void {
     this.isGrabbed = true;
     this.state = 'Grabbed';
     this.vx = 0;
     this.vy = 0;
-    this.setScale(1.12);
+    // Lock the grab pixel under the cursor: store the click offset relative
+    // to the container origin (unscaled). If no click point was passed,
+    // fall back to (0, 0) which puts the container origin on the cursor.
+    this.grabOffsetX = clickWorldX !== undefined ? clickWorldX - this.x : 0;
+    this.grabOffsetY = clickWorldY !== undefined ? clickWorldY - this.y : 0;
+    // Snapshot the anim playing at grab time so the next followPointer
+    // tick can detect if updateStateAnimations has swapped to air panic.
+    this.lastGrabChibiTex = this.chibiSprite?.texture.key;
+    // Smaller pop for already-big figures (heavy_knight, raider) so they
+    // don't balloon awkwardly; full 12% for smaller ones where the pop
+    // reads as satisfying juice.
+    const pop = (this.figHalfH ?? 0) > 35 ? 1.06 : 1.12;
+    this.setScale(pop);
     this.setDepth(50);
     this.draw();
   }
 
   followPointer(x: number, y: number): void {
-    const liftPenalty = y < this.y ? 0.68 / this.stats.mass : 1;
+    // Re-anchor when the chibi swaps anim mid-grab (walk -> air panic): the
+    // figure-center container-local Y differs per texture, so shift
+    // grabOffsetY by the difference to keep the cursor on the figure.
+    const curTex = this.chibiSprite?.texture.key;
+    if (curTex && this.lastGrabChibiTex && curTex !== this.lastGrabChibiTex) {
+      const oldFigCY = this.figCenterYForTex(this.lastGrabChibiTex);
+      const newFigCY = this.figCenterYForTex(curTex);
+      this.grabOffsetY = (this.grabOffsetY ?? 0) + (newFigCY - oldFigCY);
+      this.lastGrabChibiTex = curTex;
+    }
+    // Keep the exact pixel the player grabbed under the cursor: at grab time
+    // we stored (clickWorld - containerOrigin) in container-local UNSCALED
+    // coords. The grab pop scales the container, so multiply by scaleX/Y to
+    // get the equivalent world delta now.
+    const offsetX = (this.grabOffsetX ?? 0) * this.scaleX;
+    const offsetY = (this.grabOffsetY ?? 0) * this.scaleY;
+    const targetX = x - offsetX;
+    const targetY = y - offsetY;
+    const liftPenalty = targetY < this.y ? 0.68 / this.stats.mass : 1;
     const follow = this.stats.dragFollow;
-    this.x += (x - this.x) * follow;
-    this.y += (y - this.y) * follow * liftPenalty;
+    this.x += (targetX - this.x) * follow;
+    this.y += (targetY - this.y) * follow * liftPenalty;
+  }
+
+  private figCenterYForTex(texKey: string): number {
+    if (!this.chibiSprite) return this.figCenterY ?? 0;
+    if (texKey === this.chibiAnimKey) return this.figCenterY ?? 0;
+    const bbox = Enemy.getFigureBbox(this.scene, texKey, 256);
+    const figCy = bbox.y + bbox.h / 2;
+    const originPxY = this.chibiSprite.originY * 256;
+    return this.chibiSprite.y + (figCy - originPxY) * this.chibiSprite.scaleY;
   }
 
   release(vx: number, vy: number): void {
