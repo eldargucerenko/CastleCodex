@@ -19,7 +19,7 @@ export class BootScene extends Phaser.Scene {
       { name: 'archer',       key: 'archer',       actions: ['walk', 'air_panic', 'getup', 'hurt',             'strike2'] },
       { name: 'bomber',       key: 'bomber',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1'] },
       { name: 'raider',       key: 'raider',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
-      { name: 'wizard',       key: 'wizard',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1'] },
+      { name: 'wizard',       key: 'wizard',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike2', 'shield_cast'] },
       { name: 'heavy_knight', key: 'heavy-knight', actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
       { name: 'log_thrower',  key: 'log-thrower',  actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] },
       { name: 'hammerman',    key: 'jumper',       actions: ['walk', 'air_panic', 'getup', 'hurt', 'strike1', 'strike2'] }
@@ -71,7 +71,9 @@ export class BootScene extends Phaser.Scene {
       ['getup',  10,   0, 7],
       ['hurt',   14,   0, 7],
       ['strike1', 14, 0, 7],
-      ['strike2', 14, 0, 7]
+      ['strike2', 14, 0, 7],
+      // Wizard-only re-shield charge: ~1.3s loop runs through the 2s cast.
+      ['shield_cast', 6, -1, 7]
     ];
     const enemyKeys = ['knight', 'archer', 'bomber', 'raider', 'wizard',
                        'heavy-knight', 'log-thrower', 'jumper'];

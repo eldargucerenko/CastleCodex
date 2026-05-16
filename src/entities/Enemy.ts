@@ -65,12 +65,12 @@ const EXTRAS_BY_KIND: Partial<Record<EnemyKind, AnimExtras>> = {
   // strike2 was dead art so it's dropped from the pool entirely.
   wizard: {
     air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt',
-    strikes: ['enemy-wizard-strike1']
+    strikes: ['enemy-wizard-strike2']
   },
-  wizard_easy:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1'] },
-  wizard_medium: { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1'] },
-  wizard_hard:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1'] },
-  cursor_mage:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike1'] }
+  wizard_easy:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike2'] },
+  wizard_medium: { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike2'] },
+  wizard_hard:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike2'] },
+  cursor_mage:   { air: 'enemy-wizard-air', getup: 'enemy-wizard-getup', hurt: 'enemy-wizard-hurt', strikes: ['enemy-wizard-strike2'] }
 };
 
 export class Enemy extends Phaser.GameObjects.Container {

@@ -176,8 +176,12 @@ export class WizardEnemy extends Enemy {
     this.state = 'Stunned';
     this.vx = 0;
     this.vy = 0;
+    const justStarted = this.wizardState !== 'CastingShield';
     this.wizardState = 'CastingShield';
     this.shieldCastStartedAt ??= time;
+    if (justStarted) {
+      this.playLoopAnim('enemy-wizard-shield_cast');
+    }
     this.castText ??= this.scene.add
       .text(0, -this.stats.radius - 33, '', { color: '#4c1d95', fontSize: '15px', fontStyle: 'bold' })
       .setOrigin(0.5);
