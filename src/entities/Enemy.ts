@@ -91,6 +91,12 @@ export class Enemy extends Phaser.GameObjects.Container {
   protected labelText: Phaser.GameObjects.Text;
   protected chibiSprite?: Phaser.GameObjects.Sprite;
   protected chibiAnimKey?: string;
+  // Display half-extents of the figure (walk anim bbox), in container-local
+  // coords. containsPoint uses these instead of `radius` so the hit area
+  // matches the visible figure. Unset for kinds without a chibi sprite.
+  protected figHalfW?: number;
+  protected figHalfH?: number;
+  protected figCenterY?: number;
   protected statusText: Phaser.GameObjects.Text;
   protected hpBar: Phaser.GameObjects.Rectangle;
   protected hpBack: Phaser.GameObjects.Rectangle;
@@ -161,6 +167,11 @@ export class Enemy extends Phaser.GameObjects.Container {
     sprite.play(animKey);
     this.chibiSprite = sprite;
     this.chibiAnimKey = animKey;
+    // Cache the figure's display half-extents + y-offset so containsPoint
+    // can hit-test the visible figure instead of a circle on `radius`.
+    this.figHalfW = (bbox.w / 2) * scale;
+    this.figHalfH = (bbox.h / 2) * scale;
+    this.figCenterY = -this.stats.radius * 0.6;
     this.addAt(sprite, 0);
   }
 
@@ -312,6 +323,15 @@ export class Enemy extends Phaser.GameObjects.Container {
   }
 
   containsPoint(x: number, y: number): boolean {
+    // Prefer the visible-figure rect (walk anim bbox, padded 10%) so the
+    // grab area matches what the player sees. Falls back to the legacy
+    // radius circle for kinds without a chibi sprite (no figure metrics).
+    if (this.figHalfW !== undefined && this.figHalfH !== undefined && this.figCenterY !== undefined) {
+      const pad = 1.1;
+      const cx = this.x;
+      const cy = this.y + this.figCenterY;
+      return Math.abs(x - cx) <= this.figHalfW * pad && Math.abs(y - cy) <= this.figHalfH * pad;
+    }
     return Phaser.Math.Distance.Between(this.x, this.y, x, y) <= this.stats.radius + 12;
   }
 
