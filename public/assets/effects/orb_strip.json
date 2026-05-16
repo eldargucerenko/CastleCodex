@@ -1,7 +1,7 @@
 {
   "sheet": "orb_strip.png",
   "cell_size": 128,
-  "animation": "walk",
+  "animation": "pulse",
   "directions": 1,
   "frames_per_dir": 8,
   "anchor": {
