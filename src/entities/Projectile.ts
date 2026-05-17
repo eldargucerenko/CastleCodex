@@ -24,7 +24,9 @@ export class Projectile extends Phaser.GameObjects.Container {
     speed: number,
     color: number,
     private onHit: () => void,
-    textureKey?: string
+    textureKey?: string,
+    animKey?: string,
+    displaySize?: number
   ) {
     super(scene, x, y);
     this.ownerScene = scene;
@@ -33,9 +35,14 @@ export class Projectile extends Phaser.GameObjects.Container {
     this.vy = Math.sin(angle) * speed;
     this.lastAngle = angle;
     this.maxDistance = Phaser.Math.Distance.Between(x, y, targetX, targetY);
-    this.shaft = textureKey
-      ? scene.add.sprite(0, 0, textureKey)
-      : scene.add.rectangle(0, 0, 22, 4, color).setOrigin(0.2, 0.5);
+    if (textureKey) {
+      const s = scene.add.sprite(0, 0, textureKey);
+      if (displaySize !== undefined) s.setDisplaySize(displaySize, displaySize);
+      if (animKey && scene.anims.exists(animKey)) s.play(animKey);
+      this.shaft = s;
+    } else {
+      this.shaft = scene.add.rectangle(0, 0, 22, 4, color).setOrigin(0.2, 0.5);
+    }
     this.hasTrail = textureKey !== undefined;
     this.rotation = angle;
     this.add(this.shaft);
@@ -52,10 +59,12 @@ export class Projectile extends Phaser.GameObjects.Container {
     speed: number,
     color: number,
     onHit: () => void,
-    textureKey?: string
+    textureKey?: string,
+    animKey?: string,
+    displaySize?: number
   ): Projectile {
     const initialTarget = getTarget();
-    const projectile = new Projectile(scene, x, y, initialTarget?.x ?? x, initialTarget?.y ?? y, speed, color, onHit, textureKey);
+    const projectile = new Projectile(scene, x, y, initialTarget?.x ?? x, initialTarget?.y ?? y, speed, color, onHit, textureKey, animKey, displaySize);
     projectile.enableHoming(getTarget, speed);
     return projectile;
   }

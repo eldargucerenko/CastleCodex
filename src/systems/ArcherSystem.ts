@@ -20,7 +20,15 @@ export class ArcherSystem {
     const target = Phaser.Utils.Array.GetRandom(targets);
     if (!target || !shooter) return;
     this.nextShotAt = time + this.fireRate;
-    Projectile.homing(this.scene, shooter.x + 12, shooter.y - 8, () => (this.canShootTarget(target, this.range) ? target : undefined), 620, 0xf59e0b, () => {
+    // Quick recoil pulse on the firing archer so the player can read who shot.
+    this.castle.animateArcherShot(shooter);
+    // Straight-line shot at the target's CURRENT position. Non-homing so the
+    // arrow doesn't curve toward an enemy that walks while the arrow is in
+    // flight ("self-aiming"). Damage still applies to the target object on
+    // arrival -- the target may have moved by then; this keeps the gameplay
+    // simple while losing the visually awkward homing curve.
+    new Projectile(this.scene, shooter.x + 12, shooter.y - 8, target.x, target.y, 620, 0xf59e0b, () => {
+      if (!this.canShootTarget(target, this.range)) return;
       if (target instanceof WizardEnemy && target.hasActiveShield()) {
         target.pulseShield();
         return;

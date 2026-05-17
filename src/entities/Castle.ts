@@ -31,10 +31,11 @@ export class Castle {
   private body: Phaser.GameObjects.Rectangle;
   private playerArchers: Array<
     PlayerDefenderTarget & {
-      body: Phaser.GameObjects.Arc;
+      body: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite;
       label: Phaser.GameObjects.Text;
       hpBack: Phaser.GameObjects.Rectangle;
       hpBar: Phaser.GameObjects.Rectangle;
+      baseScale: number;
     }
   > = [];
   private playerMage?: PlayerDefenderTarget & {
@@ -103,6 +104,35 @@ export class Castle {
     return this.playerArchers.filter((archer) => archer.hp > 0).length;
   }
 
+  // Play the firing archer's draw/release animation. When the multi-frame
+  // shoot anim is available it gets played and snapped back to frame 0 on
+  // complete; otherwise (legacy Arc body or static-image fallback) a quick
+  // scale-yoyo serves as a stand-in shoot cue.
+  animateArcherShot(target: PlayerArcherTarget): void {
+    const entry = this.playerArchers.find((a) => a === target);
+    if (!entry) return;
+    const body = entry.body;
+    if ('play' in body && this.scene.anims.exists('defender-archer-shoot-play')) {
+      body.play('defender-archer-shoot-play');
+      body.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+        if (body.active) body.setFrame(0);
+      });
+      return;
+    }
+    // Fallback scale-yoyo for Arc body / non-anim sprite.
+    this.scene.tweens.killTweensOf(body);
+    body.setScale(entry.baseScale);
+    const peak = entry.baseScale * 1.15;
+    this.scene.tweens.add({
+      targets: body,
+      scaleX: peak, scaleY: peak,
+      yoyo: true,
+      duration: 90,
+      ease: 'Quad.easeOut',
+      onComplete: () => body.setScale(entry.baseScale)
+    });
+  }
+
   hasLivingMage(): boolean {
     return (this.playerMage?.hp ?? 0) > 0;
   }
@@ -137,16 +167,43 @@ export class Castle {
 
   private createPlayerArchers(): void {
     const count = Math.min(3, this.archerLevel);
+    // Prefer the animated shoot strip: frame 0 = aiming idle pose, the full
+    // 8-frame anim plays on each shot. Fall back to the static defender-
+    // archer image, then to the legacy yellow circle.
+    const useShootSprite = this.scene.textures.exists('defender-archer-shoot');
+    const useStaticImage = !useShootSprite && this.scene.textures.exists('defender-archer');
     for (let i = 0; i < count; i += 1) {
       const x = this.width - 34;
       const y = this.top + 26 + i * 42;
       const maxHp = 20;
       const hp = Phaser.Math.Clamp(this.archerHp[i] ?? maxHp, 0, maxHp);
-      const body = this.scene.add.circle(x, y, 8, 0xfef3c7).setStrokeStyle(2, 0x78350f);
-      const label = this.scene.add.text(x, y - 4, 'A', { color: '#78350f', fontSize: '10px', fontStyle: 'bold' }).setOrigin(0.5);
+      // Defender body: chibi sprite when art is loaded, else yellow circle.
+      // Sized to ~36px tall so 3 archers fit in the 42-px slot spacing.
+      let body: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite;
+      let label: Phaser.GameObjects.Text;
+      if (useShootSprite) {
+        // Source art faces left; flipX so the archer aims right at incoming
+        // enemies. Sits on frame 0 (aiming pose) until ArcherSystem calls
+        // animateArcherShot which plays the full draw/release anim.
+        const spr = this.scene.add.sprite(x, y, 'defender-archer-shoot', 0).setDisplaySize(31, 36).setFlipX(true);
+        body = spr;
+        label = this.scene.add.text(x, y - 4, '', { fontSize: '1px' }).setOrigin(0.5).setVisible(false);
+      } else if (useStaticImage) {
+        // Legacy path: pre-flipped static PNG, no setFlipX needed.
+        const spr = this.scene.add.sprite(x, y, 'defender-archer').setDisplaySize(31, 36);
+        body = spr;
+        label = this.scene.add.text(x, y - 4, '', { fontSize: '1px' }).setOrigin(0.5).setVisible(false);
+      } else {
+        body = this.scene.add.circle(x, y, 8, 0xfef3c7).setStrokeStyle(2, 0x78350f);
+        label = this.scene.add.text(x, y - 4, 'A', { color: '#78350f', fontSize: '10px', fontStyle: 'bold' }).setOrigin(0.5);
+      }
       const hpBack = this.scene.add.rectangle(x, y + 13, 22, 4, 0x1f2937).setOrigin(0.5);
       const hpBar = this.scene.add.rectangle(x, y + 13, 22, 4, 0x22c55e).setOrigin(0.5);
-      const archer = { kind: 'archer' as const, x, y, hp, maxHp, body, label, hpBack, hpBar };
+      // Capture base scale AFTER setDisplaySize/circle so the recoil tween
+      // can yoyo around it without sending the figure back to its native
+      // 128x128 source size.
+      const baseScale = body.scaleX;
+      const archer = { kind: 'archer' as const, x, y, hp, maxHp, body, label, hpBack, hpBar, baseScale };
       this.playerArchers.push(archer);
       this.refreshDefender(archer);
     }
@@ -168,7 +225,7 @@ export class Castle {
 
   private refreshDefender(
     defender: PlayerDefenderTarget & {
-      body: Phaser.GameObjects.Arc;
+      body: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite;
       label: Phaser.GameObjects.Text;
       hpBack: Phaser.GameObjects.Rectangle;
       hpBar: Phaser.GameObjects.Rectangle;
@@ -179,7 +236,9 @@ export class Castle {
     defender.hpBar.width = maxWidth * ratio;
     defender.hpBar.x = defender.x - (maxWidth - defender.hpBar.width) / 2;
     if (defender.hp <= 0) {
-      defender.body.setFillStyle(0x6b7280);
+      // Arc supports setFillStyle (legacy circle defender); Image does not.
+      // Alpha drop alone reads as "down" for the sprite-bodied archer.
+      if ('setFillStyle' in defender.body) defender.body.setFillStyle(0x6b7280);
       defender.body.setAlpha(0.35);
       defender.label.setAlpha(0.35);
       defender.hpBack.setVisible(false);

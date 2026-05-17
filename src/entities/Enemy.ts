@@ -31,6 +31,11 @@ interface AnimExtras {
   getup?: string;
   hurt?: string;
   strikes?: string[];
+  // Single-frame standing pose used by updateWalkAnimation's snap-back when
+  // the enemy stops moving. Override for kinds whose walk frame 0 doesn't
+  // read well as "stationary" (e.g. heavy_knight whose walk frame 0 is a
+  // rest pose that looks like the figure froze mid-stride).
+  idle?: string;
 }
 const EXTRAS_BY_KIND: Partial<Record<EnemyKind, AnimExtras>> = {
   basic: {
@@ -55,7 +60,8 @@ const EXTRAS_BY_KIND: Partial<Record<EnemyKind, AnimExtras>> = {
   },
   fat: {
     air: 'enemy-heavy-knight-air', getup: 'enemy-heavy-knight-getup', hurt: 'enemy-heavy-knight-hurt',
-    strikes: ['enemy-heavy-knight-strike1', 'enemy-heavy-knight-strike2']
+    strikes: ['enemy-heavy-knight-strike1', 'enemy-heavy-knight-strike2'],
+    idle: 'enemy-heavy-knight-idle'
   },
   trunk: {
     air: 'enemy-log-thrower-air', getup: 'enemy-log-thrower-getup', hurt: 'enemy-log-thrower-hurt',
@@ -268,19 +274,32 @@ export class Enemy extends Phaser.GameObjects.Container {
       altitude > 12;
     const moving = !stationary && Math.abs(dx) > 0.05;
     const isPlaying = this.chibiSprite.anims.isPlaying;
-    const onWalkSheet = this.chibiSprite.texture.key === this.chibiAnimKey;
+    // Per-kind "I'm standing still" pose: defaults to walk-sheet frame 0,
+    // overridden via EXTRAS_BY_KIND[kind].idle for kinds whose walk frame 0
+    // doesn't read as a stand pose (heavy_knight has a dedicated idle).
+    const idleKey = EXTRAS_BY_KIND[this.kind]?.idle;
+    const stationaryKey = idleKey ?? this.chibiAnimKey;
+    const onStationaryTexture = this.chibiSprite.texture.key === stationaryKey;
     if (moving && !isPlaying) {
       this.chibiSprite.play(this.chibiAnimKey);
     } else if (!moving && isPlaying) {
       this.chibiSprite.anims.stop();
-      this.chibiSprite.setFrame(0);
-    } else if (!moving && !isPlaying && !onWalkSheet) {
+      if (idleKey) {
+        this.chibiSprite.setTexture(idleKey);
+      } else {
+        this.chibiSprite.setFrame(0);
+      }
+    } else if (!moving && !isPlaying && !onStationaryTexture) {
       // A one-shot anim (strike / hurt / getup) just ended -- the sprite is
       // sitting on the last frame of THAT sheet, so it visibly stays in a
       // strike pose (and inherits whatever mirror direction the anim's
-      // source art had) until the enemy moves again. Snap back to the walk
-      // sheet's first frame so the enemy returns to its idle pose.
-      this.chibiSprite.setTexture(this.chibiAnimKey, 0);
+      // source art had) until the enemy moves again. Snap to the stationary
+      // pose (per-kind idle if set, otherwise walk-sheet frame 0).
+      if (idleKey) {
+        this.chibiSprite.setTexture(idleKey);
+      } else {
+        this.chibiSprite.setTexture(this.chibiAnimKey, 0);
+      }
     }
   }
 

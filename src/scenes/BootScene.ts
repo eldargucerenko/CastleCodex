@@ -49,6 +49,32 @@ export class BootScene extends Phaser.Scene {
       frameHeight: 128
     });
 
+    // Heavy_knight idle pose -- a single 256x256 standing frame the walk
+    // anim's frame 0 (rest pose, both feet planted) doesn't read well as.
+    // Used by updateWalkAnimation's snap-back when the knight goes stationary.
+    this.load.image('enemy-heavy-knight-idle', `${assetBasePath}assets/enemies/heavy_knight_idle.png`);
+
+    // Castle defender art (blue archer holding drawn bow). Static image
+    // used as the legacy fallback; the shoot strip is what drives the live
+    // chibi sprite -- frame 0 is the aim/standing pose and the full 8-frame
+    // anim plays each time the archer fires.
+    this.load.image('defender-archer', `${assetBasePath}assets/defenders/archer_ally.png`);
+    this.load.spritesheet('defender-archer-shoot', `${assetBasePath}assets/defenders/ally_archer_shoot_strip.png`, {
+      frameWidth: 256,
+      frameHeight: 256
+    });
+
+    // Wizard shield aura (looping ring around the wizard while shielded)
+    // and wand blast (pulsing orb used as the wizard's projectile sprite).
+    this.load.spritesheet('effect-shield', `${assetBasePath}assets/effects/shield_active_strip.png`, {
+      frameWidth: 256,
+      frameHeight: 256
+    });
+    this.load.spritesheet('effect-blast', `${assetBasePath}assets/projectiles/blast_fx_strip.png`, {
+      frameWidth: 256,
+      frameHeight: 256
+    });
+
     SoundBank.preload(this, assetBasePath);
   }
 
@@ -61,9 +87,10 @@ export class BootScene extends Phaser.Scene {
   private createEnemyAnimations(): void {
     // (key suffix, frameRate, repeat) per action type. walk + air are loops;
     // strikes / hurt / getup are one-shots.
-    // Walk loops 0..6 to hide the imperfect frame-7 -> 0 snap from the
-    // WAN-generated cycles. Other anims play full 8 frames since they're
-    // one-shots (no loop) or feel intentional even with a tiny snap.
+    // Walk loops 0..6: frame 7 is a near-duplicate rest pose of frame 0
+    // (small pixel delta is a *pose duplicate*, not a smooth seam), so
+    // including it reads as a freeze on the last frame instead of smooth
+    // motion. Other anims play the full 8 frames as one-shots.
     const ACTIONS: Array<[string, number, number, number]> = [
       // [actionKey, frameRate, repeat, lastFrame]
       ['walk',    8,  -1, 6],
@@ -105,6 +132,34 @@ export class BootScene extends Phaser.Scene {
         frames: this.anims.generateFrameNumbers('effect-orb', { start: 0, end: 7 }),
         frameRate: 10,
         repeat: -1
+      });
+    }
+    // Wizard shield active aura: ambient loop while the shield is up.
+    if (this.textures.exists('effect-shield') && !this.anims.exists('effect-shield-loop')) {
+      this.anims.create({
+        key: 'effect-shield-loop',
+        frames: this.anims.generateFrameNumbers('effect-shield', { start: 0, end: 7 }),
+        frameRate: 8,
+        repeat: -1
+      });
+    }
+    // Wizard wand blast: pulsing orb the projectile sprite plays in flight.
+    if (this.textures.exists('effect-blast') && !this.anims.exists('effect-blast-loop')) {
+      this.anims.create({
+        key: 'effect-blast-loop',
+        frames: this.anims.generateFrameNumbers('effect-blast', { start: 0, end: 7 }),
+        frameRate: 12,
+        repeat: -1
+      });
+    }
+    // Ally archer shoot: one-shot draw + release that ArcherSystem plays
+    // on each fired arrow. Frame 0 = wind-up (used as the static idle pose).
+    if (this.textures.exists('defender-archer-shoot') && !this.anims.exists('defender-archer-shoot-play')) {
+      this.anims.create({
+        key: 'defender-archer-shoot-play',
+        frames: this.anims.generateFrameNumbers('defender-archer-shoot', { start: 0, end: 7 }),
+        frameRate: 14,
+        repeat: 0
       });
     }
   }

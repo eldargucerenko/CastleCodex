@@ -16,7 +16,7 @@ export class WizardEnemy extends Enemy {
   readonly runeCount: number;
   private sequence: number[];
   private progress = 0;
-  private shield?: Phaser.GameObjects.Arc;
+  private shield?: Phaser.GameObjects.Sprite;
   private runes: RuneButton[] = [];
   private lastShotAt = 0;
   private shieldCastStartedAt?: number;
@@ -51,8 +51,19 @@ export class WizardEnemy extends Enemy {
       if (time - this.lastShotAt > (this.stats.projectileRateMs ?? 1600)) {
         this.lastShotAt = time;
         this.triggerStrike();
-        new Projectile(this.scene, this.x - 8, this.y - 10, castle.width + 14, this.y - 24, 390, 0xa855f7, () => {
-          castle.takeDamage(this.stats.projectileDamage ?? 7);
+        // Strike2 plays at 14 fps over 8 frames (~571 ms). The wand swings
+        // down to horizontal on the last frame -- delay the projectile spawn
+        // to match so the bolt visually releases off the wand tip instead
+        // of preceding the anim. Skip if the wizard's gone dead/grabbed/
+        // flying between cast start and release.
+        this.scene.time.delayedCall(430, () => {
+          if (this.state === 'Dead' || this.state === 'Grabbed' || this.state === 'Flying') return;
+          // Spawn at the wand's end (slightly forward + at hand height).
+          // Sprite plays the looping orb-blast pulse; ~32 px display size
+          // keeps the glowing orb readable without dominating.
+          new Projectile(this.scene, this.x - 8, this.y - 2, castle.width + 14, this.y - 18, 390, 0xa855f7, () => {
+            castle.takeDamage(this.stats.projectileDamage ?? 7);
+          }, 'effect-blast', 'effect-blast-loop', 32);
         });
         if (this.shield?.active) {
           this.scene.tweens.add({ targets: this.shield, alpha: 0.32, yoyo: true, duration: 120 });
@@ -243,9 +254,19 @@ export class WizardEnemy extends Enemy {
 
   private createShield(): void {
     this.shield?.destroy();
-    this.shield = this.scene.add.circle(0, 0, this.stats.radius + 13, 0x8b5cf6, 0.18).setStrokeStyle(3, 0xc4b5fd, 0.95);
-    this.add(this.shield);
-    this.sendToBack(this.shield);
+    // Sprite-based aura ring (effect-shield-loop). Sized noticeably larger
+    // than the wizard's body so it reads as a halo wrapped around the
+    // figure, not a tight ring on the silhouette. Centered on the figure's
+    // upper body (lifted up from the container origin) and drawn ON TOP of
+    // the wizard so the player reads it as an active barrier, not just a
+    // ground decoration.
+    const diameter = (this.stats.radius + 46) * 2;
+    const shieldY = -this.stats.radius + 2;
+    const shield = this.scene.add.sprite(0, shieldY, 'effect-shield', 0).setDisplaySize(diameter, diameter);
+    if (this.scene.anims.exists('effect-shield-loop')) shield.play('effect-shield-loop');
+    this.shield = shield;
+    this.add(shield);
+    this.bringToTop(shield);
   }
 
   private createRunes(): void {

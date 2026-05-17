@@ -24,13 +24,24 @@ export class BomberEnemy extends Enemy {
       this.vx = 0;
       if (this.fuseStartedAt === undefined) {
         this.fuseStartedAt = time;
-        // Play the bomber's lit-bomb pose once when the fuse starts so
-        // the visible animation matches what's about to happen, and kick
-        // off a yoyo pulse that runs through the ~1s fuse (5 reps of
-        // 80ms yoyo = 800ms, ends just before explode). Used to be
-        // re-added every frame, which stacked tweens and left the scale
-        // jittering / stuck non-1 after the bomber was thrown.
-        this.triggerStrike();
+        // Loop the strike (lit-bomb) anim for the full 1s fuse instead of
+        // playing it once. The strike anim is 8 frames @ 14fps (~570ms),
+        // shorter than the 1000ms fuse -- one-shot would let snap-back-
+        // to-walk briefly flip the chibi to a non-fuse pose for the last
+        // ~430ms before explode (looked like "anim turns off"). die()'s
+        // cancelChibiAnim cleans the loop up on explode.
+        const strikeKey = 'enemy-bomber-strike1';
+        if (this.chibiSprite && this.scene.anims.exists(strikeKey)) {
+          this.chibiSprite.play({ key: strikeKey, repeat: -1 });
+        }
+        // If the bomber spawned already in attack range (no WalkToCastle
+        // phase), prevStateForAnims would still be 'Spawn' and the next
+        // updateStateAnimations tick would override our strike1 loop with
+        // playLoopAnim(walk). Mark the transition as already handled.
+        this.prevStateForAnims = this.state;
+        // Yoyo pulse runs through most of the fuse (5 reps of 80ms yoyo
+        // = 800ms, ends just before explode). Used to be re-added every
+        // frame, which stacked tweens and left the scale jittering.
         this.scene.tweens.add({
           targets: this,
           scaleX: 1.18, scaleY: 1.18,
