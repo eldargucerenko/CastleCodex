@@ -64,6 +64,9 @@ export class BootScene extends Phaser.Scene {
       frameHeight: 256
     });
 
+    this.load.image('castle-base', `${assetBasePath}assets/castle/base.png`);
+    this.load.image('castle-log-trap', `${assetBasePath}assets/castle/trap.png`);
+
     // Wizard shield aura (looping ring around the wizard while shielded)
     // and wand blast (pulsing orb used as the wizard's projectile sprite).
     this.load.spritesheet('effect-shield', `${assetBasePath}assets/effects/shield_active_strip.png`, {

@@ -60,9 +60,9 @@ export class GameScene extends Phaser.Scene {
     this.killed = 0;
     this.finishing = false;
     const tutorialPending = !this.save.tutorialCompleted && this.save.currentLevel === 1;
-    this.hasTemporaryLevelOneArcher = !tutorialPending && this.save.currentLevel === 1 && this.save.archerLevel <= 0;
-    this.hasTemporaryLevelOneMage = !tutorialPending && this.save.currentLevel === 1 && this.save.mageLevel <= 0;
-    this.hasTemporaryLevelOneLog = !tutorialPending && this.save.currentLevel === 1 && this.save.logTrapCount <= 0;
+    this.hasTemporaryLevelOneArcher = this.save.currentLevel === 1 && this.save.archerLevel <= 0;
+    this.hasTemporaryLevelOneMage = this.save.currentLevel === 1 && this.save.mageLevel <= 0;
+    this.hasTemporaryLevelOneLog = this.save.currentLevel === 1 && this.save.logTrapCount <= 0;
     const effectiveMageLevel = this.hasTemporaryLevelOneMage ? 1 : this.save.mageLevel;
     const effectiveLogTrapCount = this.hasTemporaryLevelOneLog ? 1 : this.save.logTrapCount;
 

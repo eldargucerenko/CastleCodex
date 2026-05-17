@@ -3,6 +3,17 @@ import type { CastleProgress } from '../types/game';
 import { LOGICAL_W, LOGICAL_H } from '../config/dimensions';
 import { SoundBank } from '../systems/SoundBank';
 
+const CASTLE_BASE_FRAME = 'play-area';
+const CASTLE_BASE_CROP = {
+  x: 351,
+  y: 211,
+  width: 1361,
+  height: 985
+};
+const CASTLE_RIGHT_EDGE = Math.round(LOGICAL_W * 0.35);
+const CASTLE_ART_TOP = 116;
+const CASTLE_ART_BOTTOM = LOGICAL_H;
+
 export interface PlayerDefenderTarget {
   kind: 'archer' | 'mage';
   x: number;
@@ -15,7 +26,7 @@ export type PlayerArcherTarget = PlayerDefenderTarget;
 
 export class Castle {
   readonly x = 0;
-  readonly width = Math.round(LOGICAL_W * 0.2);
+  readonly width = CASTLE_RIGHT_EDGE;
   readonly top = 240;
   readonly bottom: number;
   currentHp: number;
@@ -28,7 +39,6 @@ export class Castle {
   logTrapCount: number;
   archerHp: number[];
   mageHp?: number;
-  private body: Phaser.GameObjects.Rectangle;
   private playerArchers: Array<
     PlayerDefenderTarget & {
       body: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite;
@@ -46,7 +56,7 @@ export class Castle {
   };
 
   constructor(private scene: Phaser.Scene, progress: CastleProgress) {
-    this.bottom = LOGICAL_H - 56;
+    this.bottom = LOGICAL_H;
     this.currentHp = progress.currentHp;
     this.maxHp = progress.maxHp;
     this.baseDamageReduction = progress.baseDamageReduction;
@@ -58,15 +68,7 @@ export class Castle {
     this.archerHp = progress.archerHp;
     this.mageHp = progress.mageHp;
 
-    const height = this.bottom - this.top;
-    this.body = scene.add.rectangle(this.width / 2, this.top + height / 2, this.width, height, 0x8b5e3c);
-    this.body.setStrokeStyle(4, 0x4b2f1a);
-    scene.add.rectangle(this.width / 2, this.top - 10, this.width - 18, 34, 0x9a6a45).setStrokeStyle(3, 0x4b2f1a);
-    for (let x = 18; x < this.width; x += 34) {
-      scene.add.rectangle(x, this.top - 36, 20, 32, 0x7a5234).setStrokeStyle(3, 0x4b2f1a);
-    }
-    scene.add.rectangle(this.width / 2, this.top + height * 0.44, this.width * 0.42, height * 0.46, 0x6f452b).setStrokeStyle(3, 0x4b2f1a);
-    scene.add.circle(this.width / 2, this.top + height * 0.44, 18, 0x1f2937, 0.45);
+    this.createCastleArt();
 
     this.createPlayerArchers();
     this.createPlayerMage();
@@ -137,6 +139,10 @@ export class Castle {
     return (this.playerMage?.hp ?? 0) > 0;
   }
 
+  getLogRestPosition(): Phaser.Math.Vector2 {
+    return new Phaser.Math.Vector2(this.width - 58, this.top + 92);
+  }
+
   damageDefender(target: PlayerDefenderTarget, amount: number): void {
     const defender =
       target.kind === 'mage' ? (this.playerMage === target ? this.playerMage : undefined) : this.playerArchers.find((candidate) => candidate === target);
@@ -173,8 +179,9 @@ export class Castle {
     const useShootSprite = this.scene.textures.exists('defender-archer-shoot');
     const useStaticImage = !useShootSprite && this.scene.textures.exists('defender-archer');
     for (let i = 0; i < count; i += 1) {
-      const x = this.width - 34;
-      const y = this.top + 26 + i * 42;
+      const slot = this.getArcherSlot(i);
+      const x = slot.x;
+      const y = slot.y;
       const maxHp = 20;
       const hp = Phaser.Math.Clamp(this.archerHp[i] ?? maxHp, 0, maxHp);
       // Defender body: chibi sprite when art is loaded, else yellow circle.
@@ -185,12 +192,12 @@ export class Castle {
         // Source art faces left; flipX so the archer aims right at incoming
         // enemies. Sits on frame 0 (aiming pose) until ArcherSystem calls
         // animateArcherShot which plays the full draw/release anim.
-        const spr = this.scene.add.sprite(x, y, 'defender-archer-shoot', 0).setDisplaySize(31, 36).setFlipX(true);
+        const spr = this.scene.add.sprite(x, y, 'defender-archer-shoot', 0).setDisplaySize(40, 46).setFlipX(true);
         body = spr;
         label = this.scene.add.text(x, y - 4, '', { fontSize: '1px' }).setOrigin(0.5).setVisible(false);
       } else if (useStaticImage) {
         // Legacy path: pre-flipped static PNG, no setFlipX needed.
-        const spr = this.scene.add.sprite(x, y, 'defender-archer').setDisplaySize(31, 36);
+        const spr = this.scene.add.sprite(x, y, 'defender-archer').setDisplaySize(40, 46);
         body = spr;
         label = this.scene.add.text(x, y - 4, '', { fontSize: '1px' }).setOrigin(0.5).setVisible(false);
       } else {
@@ -199,6 +206,10 @@ export class Castle {
       }
       const hpBack = this.scene.add.rectangle(x, y + 13, 22, 4, 0x1f2937).setOrigin(0.5);
       const hpBar = this.scene.add.rectangle(x, y + 13, 22, 4, 0x22c55e).setOrigin(0.5);
+      body.setDepth(14);
+      label.setDepth(15);
+      hpBack.setDepth(15);
+      hpBar.setDepth(16);
       // Capture base scale AFTER setDisplaySize/circle so the recoil tween
       // can yoyo around it without sending the figure back to its native
       // 128x128 source size.
@@ -209,18 +220,74 @@ export class Castle {
     }
   }
 
+  private getArcherSlot(index: number): Phaser.Math.Vector2 {
+    const slots = [
+      new Phaser.Math.Vector2(this.width - 54, this.top + 32),
+      new Phaser.Math.Vector2(this.width - 274, this.top - 78),
+      new Phaser.Math.Vector2(this.width - 112, this.top + 134)
+    ];
+    return slots[index % slots.length];
+  }
+
+  private createCastleArt(): void {
+    const height = CASTLE_ART_BOTTOM - CASTLE_ART_TOP;
+
+    if (!this.scene.textures.exists('castle-base')) {
+      this.createFallbackCastleArt(height);
+      return;
+    }
+
+    const texture = this.scene.textures.get('castle-base');
+    if (!texture.has(CASTLE_BASE_FRAME)) {
+      texture.add(
+        CASTLE_BASE_FRAME,
+        0,
+        CASTLE_BASE_CROP.x,
+        CASTLE_BASE_CROP.y,
+        CASTLE_BASE_CROP.width,
+        CASTLE_BASE_CROP.height
+      );
+    }
+
+    const displayWidth = height * (CASTLE_BASE_CROP.width / CASTLE_BASE_CROP.height);
+    this.scene.add
+      .image(this.width, CASTLE_ART_BOTTOM, 'castle-base', CASTLE_BASE_FRAME)
+      .setOrigin(1, 1)
+      .setDisplaySize(displayWidth, height)
+      .setDepth(1);
+  }
+
+  private createFallbackCastleArt(height: number): void {
+    this.scene.add.rectangle(this.width / 2, CASTLE_ART_TOP + height / 2, this.width, height, 0x8b5e3c).setStrokeStyle(4, 0x4b2f1a);
+    this.scene.add.rectangle(this.width / 2, this.top - 10, this.width - 18, 34, 0x9a6a45).setStrokeStyle(3, 0x4b2f1a);
+    for (let x = 18; x < this.width; x += 34) {
+      this.scene.add.rectangle(x, this.top - 36, 20, 32, 0x7a5234).setStrokeStyle(3, 0x4b2f1a);
+    }
+    this.scene.add.rectangle(this.width / 2, this.top + height * 0.44, this.width * 0.42, height * 0.46, 0x6f452b).setStrokeStyle(3, 0x4b2f1a);
+    this.scene.add.circle(this.width / 2, this.top + height * 0.44, 18, 0x1f2937, 0.45);
+  }
+
   private createPlayerMage(): void {
     if (this.mageLevel <= 0) return;
-    const x = this.width / 2;
-    const y = this.top - 54;
+    const slot = this.getMageSlot();
+    const x = slot.x;
+    const y = slot.y;
     const maxHp = 32;
     const hp = Phaser.Math.Clamp(this.mageHp ?? maxHp, 0, maxHp);
     const body = this.scene.add.circle(x, y, 14, 0x60a5fa).setStrokeStyle(2, 0x1e3a8a);
     const label = this.scene.add.text(x, y - 3, 'M', { color: '#eff6ff', fontSize: '12px', fontStyle: 'bold' }).setOrigin(0.5);
     const hpBack = this.scene.add.rectangle(x, y + 18, 28, 4, 0x1f2937).setOrigin(0.5);
     const hpBar = this.scene.add.rectangle(x, y + 18, 28, 4, 0x22c55e).setOrigin(0.5);
+    body.setDepth(14);
+    label.setDepth(15);
+    hpBack.setDepth(15);
+    hpBar.setDepth(16);
     this.playerMage = { kind: 'mage', x, y, hp, maxHp, body, label, hpBack, hpBar };
     this.refreshDefender(this.playerMage);
+  }
+
+  private getMageSlot(): Phaser.Math.Vector2 {
+    return new Phaser.Math.Vector2(this.width - 160, this.top + 84);
   }
 
   private refreshDefender(
