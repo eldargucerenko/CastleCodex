@@ -4,6 +4,15 @@
   "animation": "strike1",
   "directions": 1,
   "frames_per_dir": 8,
+  "anchor": {
+    "x": 128,
+    "y": 244
+  },
+  "source_window": {
+    "clip": "wan_picked/heavy_knight_strike1/heavy_knight_strike1_v73.webp",
+    "start": 0,
+    "end": 32
+  },
   "frames": [
     {
       "direction": 0,

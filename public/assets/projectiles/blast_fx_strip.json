@@ -1,17 +1,12 @@
 {
-  "sheet": "heavy_knight_air_panic_strip.png",
+  "sheet": "blast_fx_strip.png",
   "cell_size": 256,
-  "animation": "air_panic",
+  "animation": "blast_fx",
   "directions": 1,
   "frames_per_dir": 8,
   "anchor": {
     "x": 128,
-    "y": 234
-  },
-  "source_window": {
-    "clip": "assets/output/wan_picked/heavy_knight_air_panic/heavy_knight_air_panic_v14.webp",
-    "start": 0,
-    "end": 32
+    "y": 128
   },
   "frames": [
     {

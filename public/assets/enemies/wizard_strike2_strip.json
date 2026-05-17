@@ -5,8 +5,13 @@
   "directions": 1,
   "frames_per_dir": 8,
   "anchor": {
-    "x": 128,
+    "x": 141,
     "y": 244
+  },
+  "source_window": {
+    "clip": "wan_batch/wizard_strike2/wizard_strike2_v10.webp",
+    "start": 0,
+    "end": 32
   },
   "frames": [
     {
